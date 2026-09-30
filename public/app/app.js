@@ -300,27 +300,17 @@ V.settings = () => head(t('الإعدادات والبيانات')) + `<div clas
   <div class="card"><h3>${ic('download')} ${t('النسخ الاحتياطي')}</h3><p class="sub">${t('بياناتك تُزامَن مع حسابك تلقائيًا. صدِّر نسخة احتياطية عند الحاجة.')}</p><div class="filters"><button class="btn sm" data-act="export">${t('تصدير JSON')}</button><button class="btn sm sec" data-act="import">${t('استيراد')}</button><button class="btn sm sec" data-act="csv">${t('تصدير المهام CSV')}</button><button class="btn sm red" data-act="reset">${t('مسح كل البيانات')}</button></div><input type="file" id="imp" accept=".json" hidden></div></div>`;
 
 const NAV = [['dash', 'home', 'لوحة القيادة'], ['myday', 'sun', 'يومي'], ['tasks', 'check', 'كل المهام'], ['important', 'star', 'المميّزة'], ['board', 'board', 'كانبان'], ['calendar', 'calendar', 'الجدولة'], ['time', 'clock', 'الوقت والدوام'], ['templates', 'repeat', 'قوالب دورية'], ['reports', 'chart', 'التقارير'], ['settings', 'settings', 'الإعدادات']];
-const HRNAV = [['/hr', 'home', 'نظرة عامة'], ['/hr/employees', 'users', 'الموظفون'], ['/hr/org', 'sitemap', 'الهيكل التنظيمي'], ['/hr/leave', 'calendar-off', 'الإجازات'], ['/hr/attendance', 'clock', 'الحضور والانصراف']];
-function sidebar() {
-  const o = open(), counts = { myday: o.filter(x => x.myDay || x.due === today()).length, tasks: o.length, important: o.filter(x => x.important).length, dash: o.filter(isOver).length };
-  const nav = NAV.map(([k, i, l]) => `<button class="${ui.view === k ? 'on' : ''}" data-nav="${k}">${ic(i)} ${t(l)}${counts[k] ? `<span class="cnt ${k === 'dash' ? 'red' : ''}">${counts[k]}</span>` : ''}</button>`).join('');
-  const hr = HRNAV.map(([h, i, l]) => `<a href="${h}">${ic(i)} ${t(l)}</a>`).join('');
-  const foot = USER ? `<div class="side-foot"><a class="me" href="/account" style="color:inherit;text-decoration:none"><span class="av">${esc([...USER.name][0] || '?')}</span><span><b>${esc(USER.name)}</b><small dir="ltr">${esc(USER.email)}</small><small id="sync">${esc(setSync.last || '')}</small></span></a>
-    <div class="row-btns">${USER.admin ? `<a class="btn sec sm" href="/users">${ic('lock')} ${t('حسابات الدخول')}</a>` : ''}<button class="btn sec sm" data-act="logout">${ic('logout')} ${t('خروج')}</button></div></div>` : '';
-  return `<aside class="side"><div class="brand"><span class="logo">${ic('check')}</span>${t('مركز القيادة')}</div>
-    <nav class="nav"><div class="nav-h">${t('المهام والجدولة')}</div>${nav}<div class="nav-h">${t('الموارد البشرية')}</div>${hr}</nav>${foot}</aside>`;
-}
+const markNav = () => document.querySelectorAll('.o-menus a[data-view]').forEach(a => a.classList.toggle('on', a.dataset.view === ui.view));
 function render() {
-  document.title = t('مركز القيادة');
+  document.title = t('المهام والجدولة') + ' — ' + t('مركز القيادة');
   const keep = document.activeElement?.dataset?.f, pos = document.activeElement?.selectionStart;
   const qv = $('#qa')?.value || '';
-  const d = new Date();
-  $('#app').innerHTML = `<div class="app">${sidebar()}<main class="main">
-    <header class="bar"><div class="q">${ic('search')}<input id="qa" value="${esc(qv)}" placeholder="${t('أضف مهمة سريعة… (مثال: اتصال بالمورد غدا !)')}"></div>
-    <button class="btn" data-act="new">${ic('plus')} ${t('مهمة')}</button><span class="date">${dtf(d, { weekday: 'long', day: 'numeric', month: 'long' })} · ${hijri(d)}</span>
-    <button class="ibtn" data-act="lang" title="${t('تغيير اللغة')}">${ic('globe')} ${LANG === 'ar' ? 'English' : 'العربية'}</button>
-    <button class="ibtn" onclick="markazToggleTheme()" title="${t('الوضع الفاتح/الداكن')}" aria-label="${t('الوضع الفاتح/الداكن')}"><span class="ic-sun">${ic('sun')}</span><span class="ic-moon">${ic('moon')}</span></button></header>
-    <section>${V[ui.view]()}</section></main></div>`;
+  const cur = NAV.find(n => n[0] === ui.view) || NAV[0];
+  $('#cp').innerHTML = `<div class="o-cp-row"><div class="o-bc"><span>${t('المهام والجدولة')}</span><span class="sep">/</span><span>${t(cur[2])}</span></div>
+    <div class="acts"><button class="btn" data-act="new">${ic('plus')} ${t('مهمة')}</button></div><span class="sp"></span><span class="date" id="sync">${esc(setSync.last || '')}</span></div>
+    <div class="o-cp-row"><label class="o-search">${ic('search')}<input id="qa" value="${esc(qv)}" placeholder="${t('أضف مهمة سريعة… (مثال: اتصال بالمورد غدا !)')}"></label></div>`;
+  $('#app').innerHTML = V[ui.view]();
+  markNav();
   if (keep) { const el = $(`[data-f="${keep}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch { } } }
 }
 
@@ -403,11 +393,8 @@ const A = {
   csv: () => { const h = ['العنوان', 'الحالة', 'الأولوية', 'المجال', 'الاستحقاق', 'الوقت', 'المشروع', 'المسؤول', 'التكرار'].map(v => t(v)), q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; download(`tasks-${today()}.csv`, '﻿' + [h.map(q).join(',')].concat(S.tasks.map(x => [x.title, t(STATUS[x.status]), t(PRIO[x.priority]), t(ROLES[x.role]), x.due, x.time, x.project, x.assignee, t(REPEAT[x.repeat])].map(q).join(','))).join('\n'), 'text/csv'); return 1; },
   import: () => { $('#imp').click(); return 1; },
   reset: () => { if (confirm(t('سيتم مسح كل البيانات. هل أنت متأكد؟ (صدِّر نسخة أولًا)'))) { S = fix({}); } },
-  logout: () => { document.getElementById('logoutForm').submit(); return 1; },
-  lang: () => { api('POST', { locale: LANG === 'ar' ? 'en' : 'ar' }, '/preferences').then(() => location.reload()).catch(() => { }); return 1; },
 };
 document.addEventListener('click', e => {
-  const nav = e.target.closest('[data-nav]'); if (nav) { ui.view = nav.dataset.nav; history.replaceState(null, '', '#' + ui.view); render(); return; }
   const el = e.target.closest('[data-act]'); if (!el || !S) return;
   const act = el.dataset.act; if (!A[act]) return;
   e.stopPropagation();

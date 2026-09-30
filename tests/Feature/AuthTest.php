@@ -24,6 +24,7 @@ class AuthTest extends TestCase
     {
         $this->get('/')->assertRedirect('/login');
         $this->getJson('/api/state')->assertUnauthorized();
+        $this->get('/tasks')->assertRedirect('/login');
         $this->get('/users')->assertRedirect('/login');
     }
 
@@ -36,7 +37,8 @@ class AuthTest extends TestCase
     {
         $this->user();
         $this->post('/login', ['email' => 'a@example.com', 'password' => 'correct-horse-1'])->assertRedirect('/');
-        $this->get('/')->assertOk()->assertSee('MARKAZ_USER', false)->assertSee('a@example.com');
+        $this->get('/')->assertOk()->assertSee('a@example.com');
+        $this->get('/tasks')->assertOk()->assertSee('MARKAZ_USER', false);
     }
 
     public function test_email_is_case_insensitive_on_login(): void

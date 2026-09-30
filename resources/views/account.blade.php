@@ -1,14 +1,13 @@
-@extends('layouts.shell')
+@extends('layouts.odoo')
 @section('title', __('حسابي').' — '.__('مركز القيادة'))
+@section('controlpanel')<x-cp :crumbs="[[__('حسابي'), null]]"></x-cp>@endsection
 @section('content')
-<div class="page-h"><h1>{{ __('حسابي') }}</h1></div>
 <div class="grid g2">
   <div class="card">
     <div class="ecard"><span class="av lg">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>
-      <div class="ttl"><b>{{ auth()->user()->name }}</b><small dir="ltr">{{ auth()->user()->email }}</small></div></div>
-    <p class="sub" style="margin-top:14px">{{ auth()->user()->is_admin ? __('مدير النظام') : (auth()->user()->is_hr ? __('مسؤول الموارد البشرية') : __('مستخدم')) }}</p>
-    <h3>{{ __('التفضيلات') }}</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">@include('partials.prefs')</div>
+      <div class="ttl"><b style="font-size:18px">{{ auth()->user()->name }}</b><small dir="ltr">{{ auth()->user()->email }}</small></div></div>
+    <p class="sub" style="margin-top:14px">{{ auth()->user()->is_admin ? __('مدير النظام') : (auth()->user()->is_hr ? __('مسؤول الموظفين والمركبات') : __('مستخدم (عرض فقط)')) }}</p>
+    <p class="sub">{{ __('اللغة والمظهر من أزرار الشريط العلوي، ويُحفظان في حسابك.') }}</p>
   </div>
   <div class="card">
     <h3>{{ __('تغيير كلمة المرور') }}</h3>

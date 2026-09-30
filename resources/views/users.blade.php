@@ -1,7 +1,7 @@
-@extends('layouts.shell')
+@extends('layouts.odoo')
 @section('title', __('حسابات الدخول').' — '.__('مركز القيادة'))
+@section('controlpanel')<x-cp :crumbs="[[__('حسابات الدخول'), null]]"></x-cp>@endsection
 @section('content')
-<div class="page-h"><h1>{{ __('حسابات الدخول') }}</h1></div>
 @foreach($errors->all() as $e)<div class="warn">{{ $e }}</div>@endforeach
 <div class="card">
   <div class="tbl-wrap"><table>
@@ -11,7 +11,7 @@
       <td><b>{{ $u->name }}</b></td>
       <td dir="ltr" style="text-align:start">{{ $u->email }}</td>
       <td>
-        <span class="pill {{ $u->is_admin ? 'vio' : ($u->is_hr ? 'blu' : '') }}">{{ $u->is_admin ? __('مدير النظام') : ($u->is_hr ? __('مسؤول الموارد البشرية') : __('مستخدم')) }}</span>
+        <span class="pill {{ $u->is_admin ? 'vio' : ($u->is_hr ? 'blu' : '') }}">{{ $u->is_admin ? __('مدير النظام') : ($u->is_hr ? __('مسؤول الموظفين والمركبات') : __('مستخدم (عرض فقط)')) }}</span>
       </td>
       <td><span class="pill {{ $u->is_active ? 'grn' : 'red' }}">{{ $u->is_active ? __('نشط') : __('موقوف') }}</span></td>
       <td>
@@ -21,8 +21,8 @@
         </form>
         <form method="POST" action="{{ route('users.role', $u) }}">@csrf @method('PUT')
           <select name="role" onchange="this.form.submit()" @disabled($u->is(auth()->user())) aria-label="{{ __('الدور') }}">
-            <option value="user" @selected(! $u->is_admin && ! $u->is_hr)>{{ __('مستخدم') }}</option>
-            <option value="hr" @selected(! $u->is_admin && $u->is_hr)>{{ __('مسؤول الموارد البشرية') }}</option>
+            <option value="user" @selected(! $u->is_admin && ! $u->is_hr)>{{ __('مستخدم (عرض فقط)') }}</option>
+            <option value="hr" @selected(! $u->is_admin && $u->is_hr)>{{ __('مسؤول الموظفين والمركبات') }}</option>
             <option value="admin" @selected($u->is_admin)>{{ __('مدير النظام') }}</option>
           </select>
         </form>
@@ -44,7 +44,7 @@
     <label>{{ __('البريد الإلكتروني') }}<input type="email" name="email" required value="{{ old('email') }}" dir="ltr"></label>
     <label>{{ __('كلمة المرور (10 أحرف فأكثر)') }}<input type="password" name="password" required minlength="10" autocomplete="new-password" dir="ltr"></label>
     <label>{{ __('الدور') }}
-      <select name="role"><option value="user">{{ __('مستخدم') }}</option><option value="hr">{{ __('مسؤول الموارد البشرية') }}</option><option value="admin">{{ __('مدير النظام') }}</option></select>
+      <select name="role"><option value="user">{{ __('مستخدم (عرض فقط)') }}</option><option value="hr">{{ __('مسؤول الموظفين والمركبات') }}</option><option value="admin">{{ __('مدير النظام') }}</option></select>
     </label>
     <button class="btn w">{{ __('إضافة') }}</button>
   </form>

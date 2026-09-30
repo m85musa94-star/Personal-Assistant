@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'is_admin', 'is_active', 'is_hr', 'locale', 'theme'])]
+#[Fillable(['name', 'email', 'password', 'is_admin', 'is_active', 'is_hr', 'locale', 'theme', 'last_company_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -20,26 +20,10 @@ class User extends Authenticatable
 
     protected $attributes = ['is_admin' => false, 'is_active' => true, 'is_hr' => false, 'locale' => 'ar', 'theme' => 'auto'];
 
-    /** مدير النظام أو مسؤول الموارد البشرية. */
-    public function isHrManager(): bool
+    /** مدير النظام أو مسؤول الموظفين والمركبات: يملك التعديل على بياناتهم. */
+    public function canManageData(): bool
     {
         return $this->is_admin || $this->is_hr;
-    }
-
-    public function employee(): HasOne
-    {
-        return $this->hasOne(Employee::class);
-    }
-
-    /** هل يحق له اعتماد إجازة هذا الموظف: مسؤول HR أو مديره المباشر. */
-    public function canDecideLeaveFor(Employee $target): bool
-    {
-        if ($this->isHrManager()) {
-            return true;
-        }
-        $me = $this->employee;
-
-        return $me !== null && $target->manager_id === $me->id && $target->id !== $me->id;
     }
 
     public function state(): HasOne
