@@ -10,7 +10,7 @@ class EnsureUserIsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless($request->user()?->is_admin, 403, 'هذه الصفحة للمدير فقط');
+        abort_unless($request->user()?->is_admin, 403, __('هذه الصفحة للمدير فقط'));
 
         return $next($request);
     }

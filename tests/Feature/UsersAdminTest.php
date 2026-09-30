@@ -23,13 +23,13 @@ class UsersAdminTest extends TestCase
     {
         $u = $this->user('u@example.com');
         $this->actingAs($u)->get('/users')->assertForbidden();
-        $this->actingAs($u)->post('/users', ['name' => 'x', 'email' => 'x@example.com', 'password' => 'long-enough-pass'])->assertForbidden();
+        $this->actingAs($u)->post('/users', ['name' => 'x', 'email' => 'x@example.com', 'password' => 'long-enough-pass', 'role' => 'user'])->assertForbidden();
     }
 
     public function test_admin_creates_user_who_can_login(): void
     {
         $admin = $this->user('admin@example.com', true);
-        $this->actingAs($admin)->post('/users', ['name' => 'سارة', 'email' => 'Sara@Example.com', 'password' => 'long-enough-pass'])->assertSessionHas('ok');
+        $this->actingAs($admin)->post('/users', ['name' => 'سارة', 'email' => 'Sara@Example.com', 'password' => 'long-enough-pass', 'role' => 'user'])->assertSessionHas('ok');
         $sara = User::where('email', 'sara@example.com')->first();
         $this->assertNotNull($sara);
         $this->assertFalse($sara->is_admin);
@@ -40,8 +40,8 @@ class UsersAdminTest extends TestCase
     public function test_duplicate_email_and_weak_password_rejected(): void
     {
         $admin = $this->user('admin@example.com', true);
-        $this->actingAs($admin)->post('/users', ['name' => 'x', 'email' => 'ADMIN@example.com', 'password' => 'long-enough-pass'])->assertSessionHasErrors('email');
-        $this->actingAs($admin)->post('/users', ['name' => 'x', 'email' => 'new@example.com', 'password' => 'short'])->assertSessionHasErrors('password');
+        $this->actingAs($admin)->post('/users', ['name' => 'x', 'email' => 'ADMIN@example.com', 'password' => 'long-enough-pass', 'role' => 'user'])->assertSessionHasErrors('email');
+        $this->actingAs($admin)->post('/users', ['name' => 'x', 'email' => 'new@example.com', 'password' => 'short', 'role' => 'user'])->assertSessionHasErrors('password');
     }
 
     public function test_admin_can_toggle_others_but_not_self(): void
@@ -60,5 +60,20 @@ class UsersAdminTest extends TestCase
         $other = $this->user('o@example.com');
         $this->actingAs($admin)->put("/users/{$other->id}/password", ['password' => 'brand-new-password'])->assertSessionHas('ok');
         $this->assertTrue(\Hash::check('brand-new-password', $other->fresh()->password));
+    }
+
+    public function test_admin_changes_roles_but_not_own(): void
+    {
+        $admin = $this->user('admin@example.com', true);
+        $other = $this->user('o@example.com');
+        $this->actingAs($admin)->put("/users/{$other->id}/role", ['role' => 'hr'])->assertSessionHas('ok');
+        $this->assertTrue($other->fresh()->is_hr);
+        $this->assertFalse($other->fresh()->is_admin);
+        $this->actingAs($admin)->put("/users/{$other->id}/role", ['role' => 'admin'])->assertSessionHas('ok');
+        $this->assertTrue($other->fresh()->is_admin);
+        $this->assertFalse($other->fresh()->is_hr);
+        $this->actingAs($admin)->put("/users/{$admin->id}/role", ['role' => 'user'])->assertSessionHasErrors('users');
+        $this->assertTrue($admin->fresh()->is_admin);
+        $this->actingAs($admin)->put("/users/{$other->id}/role", ['role' => 'root'])->assertSessionHasErrors('role');
     }
 }

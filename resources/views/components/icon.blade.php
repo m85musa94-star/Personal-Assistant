@@ -1,0 +1,2 @@
+@props(['name'])
+<svg class="i" aria-hidden="true"><use href="#i-{{ $name }}"/></svg>

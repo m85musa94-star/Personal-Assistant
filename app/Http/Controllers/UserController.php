@@ -23,37 +23,56 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')],
             'password' => ['required', Password::min(10)],
+            'role' => ['required', 'in:user,hr,admin'],
         ], [
-            'email.unique' => 'هذا البريد مسجّل مسبقًا.',
-            'password.min' => 'كلمة المرور 10 أحرف على الأقل.',
+            'email.unique' => __('هذا البريد مسجّل مسبقًا.'),
+            'password.min' => __('كلمة المرور 10 أحرف على الأقل.'),
         ]);
 
         $user = new User(['name' => $data['name'], 'email' => $data['email'], 'password' => $data['password']]);
-        $user->is_admin = $request->boolean('is_admin');
+        $this->applyRole($user, $data['role']);
         $user->is_active = true;
         $user->save();
 
-        return back()->with('ok', "تمت إضافة {$user->name}.");
+        return back()->with('ok', __('تمت إضافة :name.', ['name' => $user->name]));
     }
 
     public function toggle(Request $request, User $user): RedirectResponse
     {
         if ($user->is($request->user())) {
-            return back()->withErrors(['users' => 'لا يمكنك إيقاف حسابك بنفسك.']);
+            return back()->withErrors(['users' => __('لا يمكنك إيقاف حسابك بنفسك.')]);
         }
         $user->is_active = ! $user->is_active;
         $user->save();
 
-        return back()->with('ok', $user->is_active ? 'تم تفعيل الحساب.' : 'تم إيقاف الحساب.');
+        return back()->with('ok', $user->is_active ? __('تم تفعيل الحساب.') : __('تم إيقاف الحساب.'));
     }
 
     public function password(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate(['password' => ['required', Password::min(10)]], [
-            'password.min' => 'كلمة المرور 10 أحرف على الأقل.',
+            'password.min' => __('كلمة المرور 10 أحرف على الأقل.'),
         ]);
         $user->update(['password' => $data['password']]);
 
-        return back()->with('ok', "تم تعيين كلمة مرور جديدة لـ {$user->name}.");
+        return back()->with('ok', __('تم تعيين كلمة مرور جديدة لـ :name.', ['name' => $user->name]));
+    }
+
+    public function role(Request $request, User $user): RedirectResponse
+    {
+        if ($user->is($request->user())) {
+            return back()->withErrors(['users' => __('لا يمكنك تغيير دور حسابك بنفسك.')]);
+        }
+        $data = $request->validate(['role' => ['required', 'in:user,hr,admin']]);
+        $this->applyRole($user, $data['role']);
+        $user->save();
+
+        return back()->with('ok', __('تم تحديث الدور.'));
+    }
+
+    private function applyRole(User $user, string $role): void
+    {
+        $user->is_admin = $role === 'admin';
+        $user->is_hr = $role === 'hr';
     }
 }

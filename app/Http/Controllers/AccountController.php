@@ -19,13 +19,13 @@ class AccountController extends Controller
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'confirmed', Password::min(10)],
         ], [
-            'current_password.current_password' => 'كلمة المرور الحالية غير صحيحة.',
-            'password.confirmed' => 'تأكيد كلمة المرور غير مطابق.',
-            'password.min' => 'كلمة المرور 10 أحرف على الأقل.',
+            'current_password.current_password' => __('كلمة المرور الحالية غير صحيحة.'),
+            'password.confirmed' => __('تأكيد كلمة المرور غير مطابق.'),
+            'password.min' => __('كلمة المرور 10 أحرف على الأقل.'),
         ]);
 
         $request->user()->update(['password' => $data['password']]);
 
-        return back()->with('ok', 'تم تغيير كلمة المرور.');
+        return back()->with('ok', __('تم تغيير كلمة المرور.'));
     }
 }

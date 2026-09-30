@@ -28,14 +28,14 @@ class AuthController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $wait = RateLimiter::availableIn($key);
-            throw ValidationException::withMessages(['email' => "محاولات كثيرة. حاول بعد {$wait} ثانية."]);
+            throw ValidationException::withMessages(['email' => __('محاولات كثيرة. حاول بعد :n ثانية.', ['n' => $wait])]);
         }
 
         // الاستعلام على بريد مُصغَّر الحروف لأن الإدخال من الجوال كثيرًا ما يبدأ بحرف كبير.
         $ok = Auth::attempt(['email' => $email, 'password' => $data['password'], 'is_active' => true], $request->boolean('remember'));
         if (! $ok) {
             RateLimiter::hit($key, 60);
-            throw ValidationException::withMessages(['email' => 'البريد أو كلمة المرور غير صحيحة، أو الحساب موقوف.']);
+            throw ValidationException::withMessages(['email' => __('البريد أو كلمة المرور غير صحيحة، أو الحساب موقوف.')]);
         }
 
         RateLimiter::clear($key);

@@ -33,8 +33,8 @@ class SetupController extends Controller
             'email' => ['required', 'email', 'max:190'],
             'password' => ['required', 'confirmed', Password::min(10)],
         ], [
-            'password.confirmed' => 'تأكيد كلمة المرور غير مطابق.',
-            'password.min' => 'كلمة المرور 10 أحرف على الأقل.',
+            'password.confirmed' => __('تأكيد كلمة المرور غير مطابق.'),
+            'password.min' => __('كلمة المرور 10 أحرف على الأقل.'),
         ]);
 
         // قفل المعاملة يمنع إنشاء مديرين اثنين لو وصل طلبان معًا.

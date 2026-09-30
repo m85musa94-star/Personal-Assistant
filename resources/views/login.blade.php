@@ -1,25 +1,25 @@
-@extends('layouts.plain')
-@section('title', 'تسجيل الدخول — مركز القيادة')
+@extends('layouts.auth')
+@section('title', __('تسجيل الدخول').' — '.__('مركز القيادة'))
 @section('content')
 <div class="card">
-  <h2 style="text-align:center">🧭 مركز القيادة</h2>
-  <p class="date" style="text-align:center">سجّل الدخول للوصول إلى مهامك من أي جهاز</p>
-  <form method="POST" action="{{ route('login.post') }}" class="f" style="grid-template-columns:1fr">
+  <h1>{{ __('تسجيل الدخول') }}</h1>
+  <p class="sub">{{ __('سجّل الدخول للوصول إلى مهامك من أي جهاز') }}</p>
+  <form method="POST" action="{{ route('login.post') }}" class="f one">
     @csrf
-    <label>البريد الإلكتروني
+    <label>{{ __('البريد الإلكتروني') }}
       <input type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" dir="ltr" inputmode="email" autocapitalize="none">
     </label>
-    <label>كلمة المرور
+    <label>{{ __('كلمة المرور') }}
       <input type="password" name="password" required autocomplete="current-password" dir="ltr">
     </label>
-    <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="remember" value="1" checked> تذكّرني على هذا الجهاز</label>
+    <label class="chkrow"><input type="checkbox" name="remember" value="1" checked> {{ __('تذكّرني على هذا الجهاز') }}</label>
     @error('email')<div class="err">{{ $message }}</div>@enderror
     @error('password')<div class="err">{{ $message }}</div>@enderror
-    <button class="btn">تسجيل الدخول</button>
+    <button class="btn block">{{ __('تسجيل الدخول') }}</button>
   </form>
   @if($canSetup)
-  <p style="text-align:center"><a class="btn sec" href="{{ route('setup') }}">لا يوجد أي حساب بعد — أنشئ حساب المدير الأول</a></p>
+    <p style="text-align:center;margin:16px 0 0"><a class="btn sec block" href="{{ route('setup') }}">{{ __('لا يوجد أي حساب بعد — أنشئ حساب المدير الأول') }}</a></p>
   @endif
-  <p class="date" style="text-align:center;margin-bottom:0">لا يوجد تسجيل ذاتي. يضيف المدير الحسابات، ولنسيان كلمة المرور تواصل معه.</p>
+  <p class="sub" style="margin:16px 0 0">{{ __('لا يوجد تسجيل ذاتي. يضيف المدير الحسابات، ولنسيان كلمة المرور تواصل معه.') }}</p>
 </div>
 @endsection

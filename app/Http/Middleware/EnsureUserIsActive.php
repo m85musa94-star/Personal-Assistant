@@ -19,8 +19,8 @@ class EnsureUserIsActive
             $request->session()->regenerateToken();
 
             return $request->expectsJson()
-                ? response()->json(['message' => 'الحساب موقوف'], 401)
-                : redirect()->route('login')->withErrors(['email' => 'هذا الحساب موقوف. تواصل مع المدير.']);
+                ? response()->json(['message' => __('الحساب موقوف')], 401)
+                : redirect()->route('login')->withErrors(['email' => __('هذا الحساب موقوف. تواصل مع المدير.')]);
         }
 
         return $next($request);
