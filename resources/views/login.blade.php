@@ -17,6 +17,9 @@
     @error('password')<div class="err">{{ $message }}</div>@enderror
     <button class="btn">تسجيل الدخول</button>
   </form>
+  @if($canSetup)
+  <p style="text-align:center"><a class="btn sec" href="{{ route('setup') }}">لا يوجد أي حساب بعد — أنشئ حساب المدير الأول</a></p>
+  @endif
   <p class="date" style="text-align:center;margin-bottom:0">لا يوجد تسجيل ذاتي. يضيف المدير الحسابات، ولنسيان كلمة المرور تواصل معه.</p>
 </div>
 @endsection
