@@ -53,3 +53,7 @@ dialog::backdrop{background:#0008}
 aside h1{display:none}.nav{display:flex;overflow-x:auto;gap:2px}.nav button{white-space:nowrap;width:auto}.nav .cnt{display:none}main{padding:12px}
 .board{grid-template-columns:repeat(4,80vw)}.f{grid-template-columns:1fr}.cal .d{min-height:62px}.ev{font-size:10px}}
 @media print{aside,.top,.btn,.filters{display:none}main{padding:0}}
+body.plain{display:block}.plainbox{width:min(400px,92vw);margin:40px auto}.plainbox.wide{width:min(900px,96vw)}
+.err{color:var(--red);font-size:13px}.okm{background:var(--pri2);color:var(--pri);padding:8px 12px;border-radius:8px;margin:8px 0;font-size:14px}
+a{color:var(--pri)}.plain .f input:not([type=checkbox]){padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card)}
+.plain .f{gap:12px}.plain td form input{padding:6px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--card)}

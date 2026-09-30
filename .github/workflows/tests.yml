@@ -1,0 +1,27 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: markaz, POSTGRES_PASSWORD: markaz_ci, POSTGRES_DB: markaz_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U markaz -d markaz_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_pgsql, pgsql, pdo_sqlite' }
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: vendor/bin/pint --test
+      - name: Tests on PostgreSQL
+        env: { DB_CONNECTION: pgsql, DB_HOST: 127.0.0.1, DB_PORT: 5432, DB_DATABASE: markaz_test, DB_USERNAME: markaz, DB_PASSWORD: markaz_ci }
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test

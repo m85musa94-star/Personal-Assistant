@@ -64,87 +64,57 @@ function seed() {
   };
 }
 const fix = x => { x.tasks ||= []; x.people ||= []; x.notified ||= {}; x.logs ||= []; x.attendance ||= []; x.events ||= []; x.projects ||= []; x.theme ||= 'auto'; return x; };
+
+// ---------- الحساب والمزامنة (الخادم) ----------
+const USER = window.MARKAZ_USER || null; // {id,name,email,admin} — يحقنه الخادم بعد تسجيل الدخول
 const skey = () => USER ? `${KEY}:${USER.id}` : KEY;
 const readLocal = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const csrf = () => document.querySelector('meta[name=csrf-token]')?.content || '';
+let pushing = false, dirty = false;
+function setSync(t) { setSync.last = t; const e = $('#sync'); if (e) e.textContent = t; }
 function load() { S = fix(readLocal(skey()) || seed()); }
 function save() {
   S.ts = Date.now();
-  try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { toast('تعذر الحفظ: مساحة التخزين ممتلئة أو محظورة'); }
-  if (SB && USER) { setSync('…جارٍ الحفظ'); clearTimeout(save.h); save.h = setTimeout(push, 1200); }
+  try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { toast('تعذر الحفظ المحلي: مساحة التخزين ممتلئة أو محظورة'); }
+  if (USER) { dirty = true; setSync('…جارٍ الحفظ'); clearTimeout(save.h); save.h = setTimeout(push, 1000); }
 }
-
-// ---------- الحساب والمزامنة (Supabase) ----------
-const CFG = window.MARKAZ_CONFIG || {};
-let SB = null, USER = null, pushing = false;
-function setSync(t) { const e = $('#sync'); if (e) e.textContent = t; setSync.last = t; }
+async function api(method, body) {
+  const r = await fetch('/api/state', { method, credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf() }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401 || r.status === 419) { location.href = '/login'; throw new Error('auth'); }
+  return r;
+}
+const adopt = (remote, ts) => { S = fix(remote); S.ts = ts; try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { } };
 async function push() {
-  if (!SB || !USER || !S || pushing) return; pushing = true;
-  const { error } = await SB.from('user_data').upsert({ user_id: USER.id, data: S, updated_at: new Date().toISOString() });
+  if (!USER || !S || pushing) { if (pushing) dirty = true; return; }
+  pushing = true; dirty = false;
+  try {
+    const r = await api('PUT', { data: S, ts: S.ts });
+    if (r.status === 409) { const j = await r.json(); adopt(j.data, j.ts); render(); setSync('✓ حُدّثت من جهاز آخر'); }
+    else if (!r.ok) setSync('⚠ تعذرت المزامنة (محفوظ على الجهاز)');
+    else setSync('✓ تمت المزامنة ' + new Date().toLocaleTimeString('ar-SA', { timeStyle: 'short' }));
+  } catch (e) { if (e.message !== 'auth') setSync('⚠ لا اتصال — محفوظ على الجهاز وسيُزامَن لاحقًا'); }
   pushing = false;
-  setSync(error ? '⚠ تعذرت المزامنة (محفوظ محليًا)' : '✓ تمت المزامنة ' + new Date().toLocaleTimeString('ar-SA', { timeStyle: 'short' }));
+  if (dirty) setTimeout(push, 500);
 }
 async function pull(initial) {
-  const { data: row, error } = await SB.from('user_data').select('data').eq('user_id', USER.id).maybeSingle();
-  if (error) { setSync('⚠ لا اتصال — يعمل محليًا'); if (initial) load(); return; }
-  const local = readLocal(skey());
-  if (row?.data) {
-    const remote = fix(row.data);
-    if (initial || (remote.ts || 0) > (S.ts || 0)) {
+  try {
+    const r = await api('GET'); if (!r.ok) throw new Error('bad');
+    const { data, ts } = await r.json();
+    if (data && ts > (S.ts || 0)) {
       if (!initial && $('#dlg').open) return; // لا نقاطع نموذجًا مفتوحًا
-      if (!initial || !local || (remote.ts || 0) >= (local.ts || 0)) { S = remote; try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { } if (!initial) render(); setSync('✓ تمت المزامنة'); return; }
-    }
-    if (initial) { S = fix(local); push(); }
-  } else if (initial) {
-    // أول دخول: استخدم بيانات هذا الجهاز السابقة إن وُجدت
-    S = fix(local || readLocal(KEY) || seed()); S.ts = Date.now(); save(); push();
-  }
+      adopt(data, ts); render(); setSync('✓ تمت المزامنة');
+    } else if (!data || ts < (S.ts || 0)) { S.ts ||= Date.now(); push(); }
+    else setSync('✓ تمت المزامنة');
+  } catch (e) { if (e.message !== 'auth') setSync('⚠ لا اتصال — يعمل من نسخة الجهاز'); }
 }
-function loginScreen(msg = '', ok = false) {
-  S = null;
-  $('#app').innerHTML = `<div style="margin:auto;width:min(380px,92vw);padding:24px 0"><div class="card"><h2 style="text-align:center">🧭 مركز القيادة</h2>
-    <p class="date" style="text-align:center">سجّل الدخول لمزامنة مهامك على كل أجهزتك</p>
-    <form id="lf" class="f" style="grid-template-columns:1fr"><label>البريد الإلكتروني<input type="email" name="email" required autocomplete="email" dir="ltr"></label>
-    <label>كلمة المرور<input type="password" name="pw" required minlength="6" autocomplete="current-password" dir="ltr"></label>
-    <div id="lmsg" style="color:${ok ? 'var(--grn)' : 'var(--red)'};font-size:13px">${esc(msg)}</div>
-    <button class="btn" value="in">تسجيل الدخول</button><button class="btn sec" value="up" formnovalidate>إنشاء حساب جديد</button>
-    <button type="button" class="btn sec sm" id="forgot">نسيت كلمة المرور؟</button></form></div></div>`;
-  const f = $('#lf'), say = (t, g) => { const m = $('#lmsg'); m.textContent = t; m.style.color = g ? 'var(--grn)' : 'var(--red)'; };
-  const ar = e => /Invalid login/i.test(e) ? 'البريد أو كلمة المرور غير صحيحة' : /Email not confirmed/i.test(e) ? 'فعّل بريدك أولًا من الرسالة المرسلة إليك' : /already registered/i.test(e) ? 'هذا البريد مسجّل مسبقًا — سجّل الدخول' : /at least 6/i.test(e) ? 'كلمة المرور 6 أحرف على الأقل' : /rate limit/i.test(e) ? 'محاولات كثيرة — انتظر قليلًا' : e;
-  f.onsubmit = async e => {
-    e.preventDefault(); const up = e.submitter?.value === 'up', email = f.email.value.trim(), pw = f.pw.value;
-    if (!email || pw.length < 6) return say('أدخل بريدًا صحيحًا وكلمة مرور (6 أحرف على الأقل)');
-    say('…', true);
-    if (up) {
-      const { data, error } = await SB.auth.signUp({ email, password: pw, options: { emailRedirectTo: location.origin + location.pathname } });
-      if (error) return say(ar(error.message));
-      if (!data.session) say('تم إنشاء الحساب. افتح بريدك واضغط رابط التفعيل ثم سجّل الدخول.', true);
-    } else {
-      const { error } = await SB.auth.signInWithPassword({ email, password: pw });
-      if (error) say(ar(error.message));
-    }
-  };
-  $('#forgot').onclick = async () => {
-    const email = f.email.value.trim(); if (!email) return say('اكتب بريدك أعلاه أولًا');
-    const { error } = await SB.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-    say(error ? ar(error.message) : 'أُرسل رابط إعادة التعيين إلى بريدك', !error);
-  };
+function boot() {
+  load(); render();
+  if (!USER) return;
+  pull(true);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(false); });
+  setInterval(() => { if (!document.hidden && !pushing && !dirty) pull(false); }, 60000);
 }
-async function enter(user) {
-  USER = user; await pull(true); fix(S); render(); setSync(setSync.last || '');
-}
-async function boot() {
-  if (!(CFG.supabaseUrl && CFG.supabaseKey && window.supabase)) { load(); render(); return; } // وضع محلي بدون حساب
-  SB = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey);
-  SB.auth.onAuthStateChange(async (ev, session) => {
-    if (ev === 'PASSWORD_RECOVERY') { const np = prompt('اكتب كلمة المرور الجديدة (6 أحرف على الأقل)'); if (np && np.length >= 6) { const { error } = await SB.auth.updateUser({ password: np }); toast(error ? error.message : 'تم تغيير كلمة المرور'); } }
-    if (ev === 'SIGNED_OUT') { USER = null; loginScreen(); }
-    else if (session && (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION') && USER?.id !== session.user.id) setTimeout(() => enter(session.user), 0);
-  });
-  const { data } = await SB.auth.getSession();
-  if (!data.session) loginScreen();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && SB && USER && S) pull(false); });
-  setInterval(() => { if (SB && USER && S && !document.hidden) pull(false); }, 60000);
-}
+
 const ui = { view: 'dash', q: '', role: '', status: '', prio: '', project: '', assignee: '', calMonth: today().slice(0, 7), calSel: today(), repWeek: 0 };
 
 // ---------- منطق المهام ----------
@@ -319,7 +289,7 @@ function render() {
   const o = open(), counts = { myday: o.filter(x => x.myDay || x.due === today()).length, tasks: o.length, important: o.filter(x => x.important).length, dash: o.filter(isOver).length };
   document.documentElement.dataset.theme = S.theme === 'auto' ? (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light') : S.theme;
   const keep = document.activeElement?.dataset?.f, pos = document.activeElement?.selectionStart;
-  $('#app').innerHTML = `<aside><h1>🧭 مركز القيادة</h1><nav class="nav">${NAV.map(([k, i, l]) => `<button class="${ui.view === k ? 'on' : ''}" data-nav="${k}">${i} ${l}${counts[k] ? `<span class="cnt">${counts[k]}</span>` : ''}</button>`).join('')}</nav>${USER ? `<div class="date" style="margin:14px 8px 0;word-break:break-all">👤 ${esc(USER.email)}<div id="sync">${esc(setSync.last || '')}</div><button class="btn sm sec" style="margin-top:6px" data-act="logout">تسجيل الخروج</button></div>` : ''}</aside>
+  $('#app').innerHTML = `<aside><h1>🧭 مركز القيادة</h1><nav class="nav">${NAV.map(([k, i, l]) => `<button class="${ui.view === k ? 'on' : ''}" data-nav="${k}">${i} ${l}${counts[k] ? `<span class="cnt">${counts[k]}</span>` : ''}</button>`).join('')}</nav>${USER ? `<div class="date" style="margin:14px 8px 0;word-break:break-all">👤 ${esc(USER.name)}<br><span dir="ltr">${esc(USER.email)}</span><div id="sync">${esc(setSync.last || '')}</div><div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap"><a class="btn sm sec" href="/account">حسابي</a>${USER.admin ? '<a class="btn sm sec" href="/users">المستخدمون</a>' : ''}<button class="btn sm sec" data-act="logout">خروج</button></div></div>` : ''}</aside>
   <main><div class="top"><input class="q" id="qa" placeholder="أضف مهمة سريعة… (مثال: اتصال بالمورد غدا !)"><button class="btn" data-act="new">+ مهمة</button><span class="date">${DAYS[new Date().getDay()]} ${new Date().getDate()} ${MONTHS[new Date().getMonth()]} · ${hijri(new Date())}</span></div>${V[ui.view]()}</main>`;
   if (keep) { const el = $(`[data-f="${keep}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch { } } }
 }
@@ -390,7 +360,7 @@ const A = {
   calprev: () => { const [y, m] = ui.calMonth.split('-').map(Number); ui.calMonth = fmt(new Date(y, m - 2, 1)).slice(0, 7); },
   calnext: () => { const [y, m] = ui.calMonth.split('-').map(Number); ui.calMonth = fmt(new Date(y, m, 1)).slice(0, 7); },
   caltoday: () => { ui.calMonth = today().slice(0, 7); ui.calSel = today(); },
-  logout: () => { SB.auth.signOut(); return 1; },
+  logout: () => { document.getElementById('logoutForm').submit(); return 1; },
   clock: toggleClock, wprev: () => ui.repWeek--, wnext: () => ui.repWeek++,
   tpl: (id, el) => { addTemplate(TEMPLATES[+el.dataset.i]); toast('أُضيفت للجدول'); },
   tplall: () => { TEMPLATES.forEach(addTemplate); toast('أُضيفت كل القوالب'); },
@@ -447,4 +417,3 @@ function tick() {
 }
 setInterval(tick, 1000);
 boot();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
