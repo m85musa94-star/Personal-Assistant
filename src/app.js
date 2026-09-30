@@ -63,8 +63,88 @@ function seed() {
     ], events: [], projects: ['تقارير الإدارة', 'الإقفال الشهري', 'عمليات المكتب'], people: [], logs: [], attendance: [], timer: null, notified: {}, theme: 'auto',
   };
 }
-function load() { try { S = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch { S = seed(); } S.people ||= []; S.notified ||= {}; }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { toast('تعذر الحفظ: مساحة التخزين ممتلئة أو محظورة'); } }
+const fix = x => { x.tasks ||= []; x.people ||= []; x.notified ||= {}; x.logs ||= []; x.attendance ||= []; x.events ||= []; x.projects ||= []; x.theme ||= 'auto'; return x; };
+const skey = () => USER ? `${KEY}:${USER.id}` : KEY;
+const readLocal = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+function load() { S = fix(readLocal(skey()) || seed()); }
+function save() {
+  S.ts = Date.now();
+  try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { toast('تعذر الحفظ: مساحة التخزين ممتلئة أو محظورة'); }
+  if (SB && USER) { setSync('…جارٍ الحفظ'); clearTimeout(save.h); save.h = setTimeout(push, 1200); }
+}
+
+// ---------- الحساب والمزامنة (Supabase) ----------
+const CFG = window.MARKAZ_CONFIG || {};
+let SB = null, USER = null, pushing = false;
+function setSync(t) { const e = $('#sync'); if (e) e.textContent = t; setSync.last = t; }
+async function push() {
+  if (!SB || !USER || !S || pushing) return; pushing = true;
+  const { error } = await SB.from('user_data').upsert({ user_id: USER.id, data: S, updated_at: new Date().toISOString() });
+  pushing = false;
+  setSync(error ? '⚠ تعذرت المزامنة (محفوظ محليًا)' : '✓ تمت المزامنة ' + new Date().toLocaleTimeString('ar-SA', { timeStyle: 'short' }));
+}
+async function pull(initial) {
+  const { data: row, error } = await SB.from('user_data').select('data').eq('user_id', USER.id).maybeSingle();
+  if (error) { setSync('⚠ لا اتصال — يعمل محليًا'); if (initial) load(); return; }
+  const local = readLocal(skey());
+  if (row?.data) {
+    const remote = fix(row.data);
+    if (initial || (remote.ts || 0) > (S.ts || 0)) {
+      if (!initial && $('#dlg').open) return; // لا نقاطع نموذجًا مفتوحًا
+      if (!initial || !local || (remote.ts || 0) >= (local.ts || 0)) { S = remote; try { localStorage.setItem(skey(), JSON.stringify(S)); } catch { } if (!initial) render(); setSync('✓ تمت المزامنة'); return; }
+    }
+    if (initial) { S = fix(local); push(); }
+  } else if (initial) {
+    // أول دخول: استخدم بيانات هذا الجهاز السابقة إن وُجدت
+    S = fix(local || readLocal(KEY) || seed()); S.ts = Date.now(); save(); push();
+  }
+}
+function loginScreen(msg = '', ok = false) {
+  S = null;
+  $('#app').innerHTML = `<div style="margin:auto;width:min(380px,92vw);padding:24px 0"><div class="card"><h2 style="text-align:center">🧭 مركز القيادة</h2>
+    <p class="date" style="text-align:center">سجّل الدخول لمزامنة مهامك على كل أجهزتك</p>
+    <form id="lf" class="f" style="grid-template-columns:1fr"><label>البريد الإلكتروني<input type="email" name="email" required autocomplete="email" dir="ltr"></label>
+    <label>كلمة المرور<input type="password" name="pw" required minlength="6" autocomplete="current-password" dir="ltr"></label>
+    <div id="lmsg" style="color:${ok ? 'var(--grn)' : 'var(--red)'};font-size:13px">${esc(msg)}</div>
+    <button class="btn" value="in">تسجيل الدخول</button><button class="btn sec" value="up" formnovalidate>إنشاء حساب جديد</button>
+    <button type="button" class="btn sec sm" id="forgot">نسيت كلمة المرور؟</button></form></div></div>`;
+  const f = $('#lf'), say = (t, g) => { const m = $('#lmsg'); m.textContent = t; m.style.color = g ? 'var(--grn)' : 'var(--red)'; };
+  const ar = e => /Invalid login/i.test(e) ? 'البريد أو كلمة المرور غير صحيحة' : /Email not confirmed/i.test(e) ? 'فعّل بريدك أولًا من الرسالة المرسلة إليك' : /already registered/i.test(e) ? 'هذا البريد مسجّل مسبقًا — سجّل الدخول' : /at least 6/i.test(e) ? 'كلمة المرور 6 أحرف على الأقل' : /rate limit/i.test(e) ? 'محاولات كثيرة — انتظر قليلًا' : e;
+  f.onsubmit = async e => {
+    e.preventDefault(); const up = e.submitter?.value === 'up', email = f.email.value.trim(), pw = f.pw.value;
+    if (!email || pw.length < 6) return say('أدخل بريدًا صحيحًا وكلمة مرور (6 أحرف على الأقل)');
+    say('…', true);
+    if (up) {
+      const { data, error } = await SB.auth.signUp({ email, password: pw, options: { emailRedirectTo: location.origin + location.pathname } });
+      if (error) return say(ar(error.message));
+      if (!data.session) say('تم إنشاء الحساب. افتح بريدك واضغط رابط التفعيل ثم سجّل الدخول.', true);
+    } else {
+      const { error } = await SB.auth.signInWithPassword({ email, password: pw });
+      if (error) say(ar(error.message));
+    }
+  };
+  $('#forgot').onclick = async () => {
+    const email = f.email.value.trim(); if (!email) return say('اكتب بريدك أعلاه أولًا');
+    const { error } = await SB.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    say(error ? ar(error.message) : 'أُرسل رابط إعادة التعيين إلى بريدك', !error);
+  };
+}
+async function enter(user) {
+  USER = user; await pull(true); fix(S); render(); setSync(setSync.last || '');
+}
+async function boot() {
+  if (!(CFG.supabaseUrl && CFG.supabaseKey && window.supabase)) { load(); render(); return; } // وضع محلي بدون حساب
+  SB = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey);
+  SB.auth.onAuthStateChange(async (ev, session) => {
+    if (ev === 'PASSWORD_RECOVERY') { const np = prompt('اكتب كلمة المرور الجديدة (6 أحرف على الأقل)'); if (np && np.length >= 6) { const { error } = await SB.auth.updateUser({ password: np }); toast(error ? error.message : 'تم تغيير كلمة المرور'); } }
+    if (ev === 'SIGNED_OUT') { USER = null; loginScreen(); }
+    else if (session && (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION') && USER?.id !== session.user.id) setTimeout(() => enter(session.user), 0);
+  });
+  const { data } = await SB.auth.getSession();
+  if (!data.session) loginScreen();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && SB && USER && S) pull(false); });
+  setInterval(() => { if (SB && USER && S && !document.hidden) pull(false); }, 60000);
+}
 const ui = { view: 'dash', q: '', role: '', status: '', prio: '', project: '', assignee: '', calMonth: today().slice(0, 7), calSel: today(), repWeek: 0 };
 
 // ---------- منطق المهام ----------
@@ -239,7 +319,7 @@ function render() {
   const o = open(), counts = { myday: o.filter(x => x.myDay || x.due === today()).length, tasks: o.length, important: o.filter(x => x.important).length, dash: o.filter(isOver).length };
   document.documentElement.dataset.theme = S.theme === 'auto' ? (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light') : S.theme;
   const keep = document.activeElement?.dataset?.f, pos = document.activeElement?.selectionStart;
-  $('#app').innerHTML = `<aside><h1>🧭 مركز القيادة</h1><nav class="nav">${NAV.map(([k, i, l]) => `<button class="${ui.view === k ? 'on' : ''}" data-nav="${k}">${i} ${l}${counts[k] ? `<span class="cnt">${counts[k]}</span>` : ''}</button>`).join('')}</nav></aside>
+  $('#app').innerHTML = `<aside><h1>🧭 مركز القيادة</h1><nav class="nav">${NAV.map(([k, i, l]) => `<button class="${ui.view === k ? 'on' : ''}" data-nav="${k}">${i} ${l}${counts[k] ? `<span class="cnt">${counts[k]}</span>` : ''}</button>`).join('')}</nav>${USER ? `<div class="date" style="margin:14px 8px 0;word-break:break-all">👤 ${esc(USER.email)}<div id="sync">${esc(setSync.last || '')}</div><button class="btn sm sec" style="margin-top:6px" data-act="logout">تسجيل الخروج</button></div>` : ''}</aside>
   <main><div class="top"><input class="q" id="qa" placeholder="أضف مهمة سريعة… (مثال: اتصال بالمورد غدا !)"><button class="btn" data-act="new">+ مهمة</button><span class="date">${DAYS[new Date().getDay()]} ${new Date().getDate()} ${MONTHS[new Date().getMonth()]} · ${hijri(new Date())}</span></div>${V[ui.view]()}</main>`;
   if (keep) { const el = $(`[data-f="${keep}"]`); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch { } } }
 }
@@ -310,6 +390,7 @@ const A = {
   calprev: () => { const [y, m] = ui.calMonth.split('-').map(Number); ui.calMonth = fmt(new Date(y, m - 2, 1)).slice(0, 7); },
   calnext: () => { const [y, m] = ui.calMonth.split('-').map(Number); ui.calMonth = fmt(new Date(y, m, 1)).slice(0, 7); },
   caltoday: () => { ui.calMonth = today().slice(0, 7); ui.calSel = today(); },
+  logout: () => { SB.auth.signOut(); return 1; },
   clock: toggleClock, wprev: () => ui.repWeek--, wnext: () => ui.repWeek++,
   tpl: (id, el) => { addTemplate(TEMPLATES[+el.dataset.i]); toast('أُضيفت للجدول'); },
   tplall: () => { TEMPLATES.forEach(addTemplate); toast('أُضيفت كل القوالب'); },
@@ -321,7 +402,7 @@ const A = {
   export: () => { download(`markaz-backup-${today()}.json`, JSON.stringify(S, null, 1), 'application/json'); return 1; },
   csv: () => { const h = ['العنوان', 'الحالة', 'الأولوية', 'المجال', 'الاستحقاق', 'الوقت', 'المشروع', 'المسؤول', 'التكرار'], q = v => `"${String(v ?? '').replace(/"/g, '""')}"`; download(`tasks-${today()}.csv`, '﻿' + [h.map(q).join(',')].concat(S.tasks.map(t => [t.title, STATUS[t.status], PRIO[t.priority], ROLES[t.role], t.due, t.time, t.project, t.assignee, REPEAT[t.repeat]].map(q).join(','))).join('\n'), 'text/csv'); return 1; },
   import: () => { $('#imp').click(); return 1; },
-  reset: () => { if (confirm('سيتم مسح كل البيانات. هل أنت متأكد؟ (صدِّر نسخة أولًا)')) { S = seed(); S.tasks = []; S.projects = []; } },
+  reset: () => { if (confirm('سيتم مسح كل البيانات. هل أنت متأكد؟ (صدِّر نسخة أولًا)')) { S = fix({}); } },
 };
 function download(name, txt, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 
@@ -338,7 +419,7 @@ document.addEventListener('change', e => {
   const k = e.target.dataset.f;
   if (k === 'theme') { S.theme = e.target.value; save(); render(); } else if (k && k !== 'q') { ui[k] = e.target.value; render(); }
   if (e.target.id === 'imp' && e.target.files[0]) {
-    const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.tasks)) throw 0; S = d; load.fix?.(); S.people ||= []; S.notified ||= {}; S.logs ||= []; S.attendance ||= []; S.events ||= []; S.projects ||= []; save(); render(); toast('تم الاستيراد'); } catch { toast('ملف غير صالح'); } };
+    const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.tasks)) throw 0; S = fix(d); save(); render(); toast('تم الاستيراد'); } catch { toast('ملف غير صالح'); } };
     r.readAsText(e.target.files[0]);
   }
 });
@@ -354,6 +435,7 @@ document.addEventListener('drop', e => {
 
 // ---------- تنبيهات ومؤقّت ----------
 function tick() {
+  if (!S) return;
   const tm = $('#tmr'); if (tm && S.timer) tm.textContent = dur(Date.now() - S.timer.start);
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const now = Date.now();
@@ -364,5 +446,5 @@ function tick() {
   });
 }
 setInterval(tick, 1000);
-load(); render();
+boot();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
