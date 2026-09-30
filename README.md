@@ -10,7 +10,7 @@
 افتح `index.html` مباشرة، أو: `python3 -m http.server` ثم http://localhost:8000
 
 ## النشر على الويب
-ادمج الفرع في `main` وفعّل GitHub Pages (Settings ← Pages ← Source: GitHub Actions).
+فعّل GitHub Pages (Settings ← Pages ← Source: GitHub Actions).
 أو اسحب المجلد إلى Cloudflare Pages / Netlify Drop.
 
 ## ملاحظة

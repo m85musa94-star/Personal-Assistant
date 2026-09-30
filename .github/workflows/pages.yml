@@ -1,7 +1,7 @@
 name: Deploy to GitHub Pages
 on:
   push:
-    branches: [main]
+    branches: [main, claude/compassionate-fermi-xe2v93]
   workflow_dispatch:
 permissions:
   contents: read
