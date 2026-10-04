@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\Employee;
 use App\Models\EmployeeDocument;
+use App\Models\EmployeeRecord;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
@@ -64,11 +65,14 @@ class PreferencesTest extends TestCase
         $v = Vehicle::create(['company_id' => $company->id, 'plate' => 'ABC 1234', 'status' => 'active', 'make' => 'Toyota', 'driver_id' => $emp->id]);
         VehicleDocument::create(['vehicle_id' => $v->id, 'type' => 'registration', 'expiry_date' => today()->addDays(5)]);
         VehicleRecord::create(['vehicle_id' => $v->id, 'type' => 'fine', 'record_date' => today(), 'amount' => 300]);
+        EmployeeRecord::log($emp, 'created', ['company' => 'Acme', 'company_en' => 'Acme Co'], $u->id);
+        EmployeeRecord::create(['employee_id' => $emp->id, 'user_id' => $u->id, 'type' => 'warning', 'title' => 'Late', 'event_date' => today()]);
         $emp->leaves()->create(['leave_type_id' => 1, 'start_date' => today(), 'end_date' => today()->addDay(), 'days' => 2, 'status' => 'approved']);
 
         $paths = ['/', '/tasks', '/employees', '/employees?view=list', '/employees/create', "/employees/{$emp->id}", "/employees/{$emp->id}?tab=leaves", "/employees/{$emp->id}?tab=notes", '/leaves', '/leaves/create',
             '/vehicles', '/vehicles?view=list', '/vehicles/create', "/vehicles/{$v->id}", "/vehicles/{$v->id}?tab=records", '/vehicle-records', '/alerts',
-            '/settings/companies', '/settings/companies/create', "/settings/companies/{$company->id}", '/settings/leave-types', '/users', '/account'];
+            '/settings/companies', '/settings/companies/create', "/settings/companies/{$company->id}", '/settings/leave-types', '/users', '/users/create', "/users/{$u->id}", '/account',
+            '/employees/register', "/employees/{$emp->id}?tab=record", "/employees/{$emp->id}/print"];
         foreach ($paths as $path) {
             $html = $this->actingAs($u->fresh())->get($path)->assertOk()->getContent();
             $this->assertStringNotContainsString('validation.', $html, $path);

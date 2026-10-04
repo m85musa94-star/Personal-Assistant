@@ -9,4 +9,6 @@ return [
     'vehicle_status' => ['active' => 'In service', 'maintenance' => 'In maintenance', 'out_of_service' => 'Out of service', 'sold' => 'Sold'],
     'employee_status' => ['active' => 'Active', 'inactive' => 'Inactive'],
     'leave_status' => ['approved' => 'Recorded', 'cancelled' => 'Cancelled'],
+    'preset' => ['viewer' => 'Viewer (read only)', 'manager' => 'Employees & vehicles manager', 'hr' => 'HR & leave officer', 'fleet' => 'Fleet officer', 'tasks' => 'Tasks only', 'custom' => 'Custom permissions'],
+    'employee_record' => ['system' => 'Automatic', 'note' => 'Note', 'warning' => 'Warning', 'commendation' => 'Commendation', 'evaluation' => 'Evaluation', 'training' => 'Training', 'incident' => 'Incident', 'other' => 'Other'],
 ];

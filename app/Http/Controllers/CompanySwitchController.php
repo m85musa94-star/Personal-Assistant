@@ -14,6 +14,7 @@ class CompanySwitchController extends Controller
         $data = $request->validate(['company' => ['required']]);
         $id = $data['company'] === 'all' ? null : (int) $data['company'];
         abort_if($id !== null && ! Company::whereKey($id)->exists(), 422);
+        abort_if($id !== null && ! $request->user()->canAccessCompany($id), 403);
         CompanyContext::set($id);
 
         return back();

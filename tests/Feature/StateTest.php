@@ -13,6 +13,7 @@ class StateTest extends TestCase
     private function user(string $email): User
     {
         $u = new User(['name' => $email, 'email' => $email, 'password' => 'correct-horse-1']);
+        $u->permissions = ['tasks.use'];
         $u->save();
 
         return $u;

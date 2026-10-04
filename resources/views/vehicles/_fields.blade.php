@@ -1,4 +1,4 @@
-@php $dis = ! auth()->user()->canManageData(); $dt = fn ($k) => old($k, $vehicle->{$k}?->format('Y-m-d')); $opt = fn ($list, $group, $cur) => collect($list)->map(fn ($x) => '<option value="'.$x.'" '.($cur === $x ? 'selected' : '').'>'.e(__('types.'.$group.'.'.$x)).'</option>')->implode(''); @endphp
+@php $dis = ! auth()->user()->can('vehicles.edit'); $dt = fn ($k) => old($k, $vehicle->{$k}?->format('Y-m-d')); $opt = fn ($list, $group, $cur) => collect($list)->map(fn ($x) => '<option value="'.$x.'" '.($cur === $x ? 'selected' : '').'>'.e(__('types.'.$group.'.'.$x)).'</option>')->implode(''); @endphp
 <div class="o-title"><label>{{ __('رقم اللوحة') }}</label><input name="plate" value="{{ old('plate', $vehicle->plate) }}" required @disabled($dis) placeholder="ABC 1234" dir="ltr" style="text-align:start"></div>
 <div class="o-fields">
   <div class="o-f"><label>{{ __('الشركة') }}</label><select name="company_id" required @disabled($dis)>@foreach($companies as $c)<option value="{{ $c->id }}" @selected((string) old('company_id', $vehicle->company_id) === (string) $c->id)>{{ $c->displayName() }}</option>@endforeach</select></div>

@@ -1,7 +1,7 @@
 @extends('layouts.odoo')
 @section('title', $vehicle->plate.' — '.__('مركز القيادة'))
 @php
-    $can = auth()->user()->canManageData();
+    $can = auth()->user()->can('vehicles.edit');
     $badDocs = $documents->filter(fn ($d) => $d->tone() !== '')->count();
     $editDoc = (int) request('edit_doc');
     $money = fn ($x) => number_format((float) $x, 2);

@@ -1,7 +1,7 @@
 @extends('layouts.odoo')
 @section('title', $employee->displayName().' — '.__('مركز القيادة'))
 @php
-    $can = auth()->user()->canManageData();
+    $can = auth()->user()->can('employees.edit');
     $badDocs = $documents->filter(fn ($d) => $d->tone() !== '')->count();
     $editDoc = (int) request('edit_doc');
     $n = fn ($x) => rtrim(rtrim(number_format($x, 1), '0'), '.');
@@ -9,7 +9,9 @@
 @section('controlpanel')
 <x-cp :crumbs="[[__('الموظفون'), route('employees.index')], [$employee->displayName(), null]]">
   <x-slot:actions>
-    @if($can)<button form="ef" class="btn">{{ __('حفظ') }}</button><a class="btn sec" href="{{ route('leaves.create', ['employee' => $employee->id]) }}"><x-icon name="calendar-off"/> {{ __('تسجيل إجازة') }}</a>@endif
+    @if($can)<button form="ef" class="btn">{{ __('حفظ') }}</button>@endif
+    @can('leaves.edit')<a class="btn sec" href="{{ route('leaves.create', ['employee' => $employee->id]) }}"><x-icon name="calendar-off"/> {{ __('تسجيل إجازة') }}</a>@endcan
+    <a class="btn sec" href="{{ route('employees.print', $employee) }}" target="_blank"><x-icon name="file"/> {{ __('ملف الموظف (طباعة)') }}</a>
   </x-slot:actions>
 </x-cp>
 @endsection
@@ -18,7 +20,7 @@
 <div class="o-sheet">
   <div class="o-smart">
     <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'documents']) }}" class="{{ $badDocs ? 'warn-s' : '' }}"><x-icon name="idcard"/><span><b>{{ $documents->count() }}</b><small>{{ __('الوثائق') }}@if($badDocs) · {{ $badDocs }} ⚠@endif</small></span></a>
-    <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'leaves']) }}"><x-icon name="calendar-off"/><span><b>{{ $leaves->where('status', 'approved')->count() }}</b><small>{{ __('الإجازات') }}</small></span></a>
+    @if($canLeaves)<a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'leaves']) }}"><x-icon name="calendar-off"/><span><b>{{ $leaves->where('status', 'approved')->count() }}</b><small>{{ __('الإجازات') }}</small></span></a>@endif
     @if($employee->vehicles->isNotEmpty())<a href="{{ route('vehicles.index', ['q' => $employee->vehicles->first()->plate]) }}"><x-icon name="car"/><span><b>{{ $employee->vehicles->count() }}</b><small>{{ __('المركبات') }}</small></span></a>@endif
   </div>
 
@@ -42,7 +44,8 @@
   <div class="o-notebook">
     <div class="o-tabs">
       <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'documents']) }}" class="{{ $tab === 'documents' ? 'on' : '' }}">{{ __('الوثائق (الإقامة والتأمين…)') }}</a>
-      <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'leaves']) }}" class="{{ $tab === 'leaves' ? 'on' : '' }}">{{ __('الإجازات') }}</a>
+      @if($canLeaves)<a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'leaves']) }}" class="{{ $tab === 'leaves' ? 'on' : '' }}">{{ __('الإجازات') }}</a>@endif
+      <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'record']) }}" class="{{ $tab === 'record' ? 'on' : '' }}">{{ __('سجل الموظف') }}</a>
       <a href="{{ route('employees.show', ['employee' => $employee, 'tab' => 'notes']) }}" class="{{ $tab === 'notes' ? 'on' : '' }}">{{ __('ملاحظات') }}</a>
     </div>
 
@@ -83,11 +86,11 @@
           <tr class="{{ $l->status === 'cancelled' ? 'done' : '' }}">
             <td>{{ $l->type->displayName() }}</td><td>{{ $l->start_date->fmt() }} → {{ $l->end_date->fmt() }}</td><td>{{ $n($l->days) }}</td>
             <td><span class="pill {{ $l->status === 'approved' ? 'grn' : '' }}">{{ __('types.leave_status.'.$l->status) }}</span></td><td>{{ $l->reason }}</td>
-            <td>@if($can)<form method="POST" action="{{ route('leaves.toggle', $l) }}">@csrf<button class="btn sm sec">{{ $l->status === 'approved' ? __('إلغاء') : __('استعادة') }}</button></form>@endif</td>
+            <td>@can('leaves.edit')<form method="POST" action="{{ route('leaves.toggle', $l) }}">@csrf<button class="btn sm sec">{{ $l->status === 'approved' ? __('إلغاء') : __('استعادة') }}</button></form>@endcan</td>
           </tr>
         @empty <tr><td colspan="6" class="empty">{{ __('لا إجازات مسجّلة.') }}</td></tr> @endforelse
       </table></div>
-      @if($can)
+      @can('leaves.edit')
         <details style="margin-top:14px"><summary class="btn sm">{{ __('تسجيل إجازة') }}</summary>
           <form method="POST" action="{{ route('leaves.store') }}" class="inline-form" data-leave-form>@csrf
             <input type="hidden" name="employee_id" value="{{ $employee->id }}"><input type="hidden" name="return" value="employee">
@@ -98,7 +101,32 @@
             <button class="btn">{{ __('تسجيل') }}</button>
           </form>
         </details>
-      @endif
+      @endcan
+    @elseif($tab === 'record')
+      @can('records.edit')
+        <details style="margin-bottom:16px" @if($records->where('type', '!=', 'system')->isEmpty()) open @endif><summary class="btn sm">{{ __('إضافة إدخال إلى السجل') }}</summary>
+          <form method="POST" action="{{ route('employee-records.store', $employee) }}" class="inline-form">@csrf
+            <label>{{ __('النوع') }}<select name="type" required>@foreach(\App\Models\EmployeeRecord::TYPES as $t)<option value="{{ $t }}">{{ __('types.employee_record.'.$t) }}</option>@endforeach</select></label>
+            <label>{{ __('التاريخ') }}<input type="date" name="event_date" value="{{ today()->format('Y-m-d') }}" required></label>
+            <label style="grid-column:span 2">{{ __('العنوان') }}<input name="title" maxlength="160" required></label>
+            <label style="grid-column:1/-1">{{ __('التفاصيل') }}<textarea name="body" rows="3" maxlength="4000"></textarea></label>
+            <button class="btn">{{ __('إضافة') }}</button>
+          </form>
+        </details>
+      @endcan
+      @php $tone = ['warning' => 'red', 'commendation' => 'grn', 'evaluation' => 'blu', 'training' => 'vio', 'incident' => 'amb', 'note' => '', 'other' => '', 'system' => '']; @endphp
+      <div class="tl">
+        @forelse($records as $r)
+          <div class="tl-item {{ $r->isSystem() ? 'sys' : '' }}">
+            <div class="meta" style="margin:0 0 4px"><span class="pill {{ $tone[$r->type] ?? '' }}">{{ __('types.employee_record.'.$r->type) }}</span><b>{{ $r->text() }}</b></div>
+            @if($r->body)<p style="margin:4px 0;white-space:pre-line">{{ $r->body }}</p>@endif
+            <small class="date">{{ $r->event_date->fmt() }} · {{ $r->user?->name ?? '—' }}</small>
+            @if(! $r->isSystem() && auth()->user()->can('records.edit') && (auth()->user()->is_admin || $r->user_id === auth()->id()))
+              <form method="POST" action="{{ route('employee-records.destroy', $r) }}" style="display:inline" onsubmit="return confirm('{{ __('حذف الإدخال؟') }}')">@csrf @method('DELETE')<button class="btn sm sec" aria-label="{{ __('حذف') }}"><x-icon name="trash"/></button></form>
+            @endif
+          </div>
+        @empty <div class="empty">{{ __('لا إدخالات في السجل بعد.') }}</div> @endforelse
+      </div>
     @endif
   </div>
 

@@ -24,8 +24,8 @@ class EmployeeDocument extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    public function label(): string
+    public function label(?string $locale = null): string
     {
-        return $this->type === 'other' && filled($this->title) ? $this->title : __('types.employee_doc.'.$this->type);
+        return $this->type === 'other' && filled($this->title) ? $this->title : __('types.employee_doc.'.$this->type, [], $locale);
     }
 }

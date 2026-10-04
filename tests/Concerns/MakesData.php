@@ -7,14 +7,16 @@ use App\Models\Employee;
 use App\Models\LeaveType;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Support\Permissions;
 
 trait MakesData
 {
-    protected function user(string $email = 'u@example.com', string $role = 'user'): User
+    /** @param string $role admin | hr (= مسؤول الموظفين والمركبات) | user (= مشاهد) */
+    protected function user(string $email = 'u@example.com', string $role = 'user', ?array $perms = null): User
     {
         $u = new User(['name' => $email, 'email' => $email, 'password' => 'correct-horse-1']);
         $u->is_admin = $role === 'admin';
-        $u->is_hr = $role === 'hr';
+        $u->permissions = $role === 'admin' ? null : ($perms ?? ($role === 'hr' ? Permissions::PRESETS['manager'] : Permissions::PRESETS['viewer']));
         $u->save();
 
         return $u;

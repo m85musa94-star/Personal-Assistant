@@ -2,7 +2,7 @@
 @section('title', __('المركبات').' — '.__('مركز القيادة'))
 @section('controlpanel')
 @php
-    $can = auth()->user()->canManageData(); $cc = \App\Support\CompanyContext::current();
+    $can = auth()->user()->can('vehicles.edit'); $cc = \App\Support\CompanyContext::current();
     $qs = fn (array $o) => route('vehicles.index', array_filter(array_merge(['q' => $q, 'status' => $status, 'view' => $view, 'alerts' => $onlyAlerts ? 1 : null], $o), fn ($v) => $v !== null && $v !== ''));
 @endphp
 <x-cp :crumbs="[[__('المركبات'), null]]">
@@ -21,7 +21,7 @@
 </x-cp>
 @endsection
 @section('content')
-@php $can = auth()->user()->canManageData(); $cc = \App\Support\CompanyContext::current(); @endphp
+@php $can = auth()->user()->can('vehicles.edit'); $cc = \App\Support\CompanyContext::current(); @endphp
 @if($vehicles->isEmpty())
   <div class="card"><div class="empty">{{ __('لا توجد مركبات مطابقة.') }}@if($can && \App\Models\Company::count())<br><br><a class="btn" href="{{ route('vehicles.create') }}"><x-icon name="plus"/> {{ __('أضف مركبة') }}</a>@endif</div></div>
 @elseif($view === 'cards')

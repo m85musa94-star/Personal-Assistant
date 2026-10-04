@@ -14,7 +14,8 @@ class VehicleDocumentController extends Controller
 
     public function store(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
+        $this->guardCompany($vehicle->company_id);
         $vehicle->documents()->create($this->validatedDocument($request, VehicleDocument::TYPES));
 
         return $this->back($vehicle, __('تمت إضافة الوثيقة.'));
@@ -22,7 +23,8 @@ class VehicleDocumentController extends Controller
 
     public function update(Request $request, VehicleDocument $document): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
+        $this->guardCompany($document->vehicle->company_id);
         $document->update($this->validatedDocument($request, VehicleDocument::TYPES));
 
         return $this->back($document->vehicle, __('تم حفظ التعديلات.'));
@@ -30,8 +32,9 @@ class VehicleDocumentController extends Controller
 
     public function destroy(Request $request, VehicleDocument $document): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
         $vehicle = $document->vehicle;
+        $this->guardCompany($vehicle->company_id);
         $document->delete();
 
         return $this->back($vehicle, __('تم حذف الوثيقة.'));

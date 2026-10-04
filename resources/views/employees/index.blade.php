@@ -2,13 +2,15 @@
 @section('title', __('الموظفون').' — '.__('مركز القيادة'))
 @section('controlpanel')
 @php
-    $can = auth()->user()->canManageData();
+    $can = auth()->user()->can('employees.edit');
     $cc = \App\Support\CompanyContext::current();
     $qs = fn (array $o) => route('employees.index', array_filter(array_merge(['q' => $q, 'status' => $status, 'view' => $view, 'alerts' => $onlyAlerts ? 1 : null], $o), fn ($v) => $v !== null && $v !== ''));
 @endphp
 <x-cp :crumbs="[[__('الموظفون'), null]]">
   <x-slot:actions>@if($can)<a class="btn" href="{{ route('employees.create') }}"><x-icon name="plus"/> {{ __('جديد') }}</a>@endif</x-slot:actions>
   <x-slot:right>
+    <a class="btn sec sm" href="{{ route('employees.register', ['status' => $status === 'inactive' ? 'inactive' : ($status === 'all' ? 'all' : 'active')]) }}"><x-icon name="file"/> {{ __('سجل الموظفين') }}</a>
+    <a class="btn sec sm" href="{{ route('employees.export', ['status' => $status]) }}"><x-icon name="download"/> {{ __('تصدير CSV') }}</a>
     <span class="date">{{ $employees->total() }} {{ __('موظف') }}</span>
     <span class="o-views"><a href="{{ $qs(['view' => 'cards']) }}" class="{{ $view === 'cards' ? 'on' : '' }}" title="{{ __('بطاقات') }}"><x-icon name="grid"/></a><a href="{{ $qs(['view' => 'list']) }}" class="{{ $view === 'list' ? 'on' : '' }}" title="{{ __('قائمة') }}"><x-icon name="list"/></a></span>
   </x-slot:right>

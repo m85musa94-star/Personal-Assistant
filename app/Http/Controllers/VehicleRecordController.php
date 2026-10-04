@@ -32,7 +32,8 @@ class VehicleRecordController extends Controller
 
     public function store(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
+        $this->guardCompany($vehicle->company_id);
         $data = $request->validate([
             'type' => ['required', 'in:'.implode(',', VehicleRecord::TYPES)],
             'record_date' => ['required', 'date'],
@@ -54,8 +55,9 @@ class VehicleRecordController extends Controller
 
     public function destroy(Request $request, VehicleRecord $record): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
         $vehicle = $record->vehicle;
+        $this->guardCompany($vehicle->company_id);
         $record->delete();
 
         return redirect()->route('vehicles.show', ['vehicle' => $vehicle, 'tab' => 'records'])->with('ok', __('تم حذف السجل.'));

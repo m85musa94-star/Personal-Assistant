@@ -14,6 +14,7 @@ class AuthTest extends TestCase
     {
         $u = new User(['name' => 'أحمد', 'email' => $o['email'] ?? 'a@example.com', 'password' => 'correct-horse-1']);
         $u->is_admin = $o['admin'] ?? false;
+        $u->permissions = ['tasks.use'];
         $u->is_active = $o['active'] ?? true;
         $u->save();
 

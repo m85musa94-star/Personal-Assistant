@@ -7,13 +7,16 @@
     $app = $appKey ? $apps[$appKey] : null;
     $companies = \App\Support\CompanyContext::all();
     $cc = \App\Support\CompanyContext::current();
-    $alerts = \App\Support\Alerts::counts();
+    $alerts = $u->can('alerts.view') ? \App\Support\Alerts::counts() : ['expired' => 0, 'soon' => 0, 'total' => 0];
     $path = request()->path();
     $isOn = function (array $m) use ($path) {
         if (! isset($m['match'])) {
             return request()->fullUrl() === $m['url'];
         }
         if ($m['match'] === 'alerts' && request()->query('scope')) { return false; }
+        if (! empty($m['exact'])) {
+            return $path === $m['match'] || (str_starts_with($path, $m['match'].'/') && ! str_starts_with($path, 'employees/register'));
+        }
         return $path === $m['match'] || str_starts_with($path, $m['match'].'/');
     };
 @endphp
@@ -44,7 +47,7 @@
       </div>
     </details>
     @endif
-    <a class="o-st" href="{{ route('alerts.index') }}" title="{{ __('التنبيهات') }}" aria-label="{{ __('التنبيهات') }}"><x-icon name="bell"/>@if($alerts['total'])<span class="o-badge {{ $alerts['expired'] ? 'red' : '' }}">{{ $alerts['total'] }}</span>@endif</a>
+    @can('alerts.view')<a class="o-st" href="{{ route('alerts.index') }}" title="{{ __('التنبيهات') }}" aria-label="{{ __('التنبيهات') }}"><x-icon name="bell"/>@if($alerts['total'])<span class="o-badge {{ $alerts['expired'] ? 'red' : '' }}">{{ $alerts['total'] }}</span>@endif</a>@endcan
     @include('partials.prefs')
     <details class="o-dd">
       <summary class="o-st" title="{{ $u->name }}"><span class="av nav">{{ mb_substr($u->name, 0, 1) }}</span></summary>

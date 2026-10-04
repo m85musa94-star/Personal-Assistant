@@ -34,8 +34,8 @@ class VehicleController extends Controller
 
     public function create(Request $request)
     {
-        $this->manage($request);
-        if (Company::count() === 0) {
+        $this->permit($request, 'vehicles.edit');
+        if (Company::allowed()->doesntExist()) {
             return redirect()->route('companies.create')->with('warn', __('أضف شركة أولًا، ثم أضف مركباتها.'));
         }
 
@@ -44,7 +44,7 @@ class VehicleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
         $vehicle = Vehicle::create($this->validated($request));
 
         return redirect()->route('vehicles.show', $vehicle)->with('ok', __('تمت إضافة المركبة.'));
@@ -52,6 +52,7 @@ class VehicleController extends Controller
 
     public function show(Request $request, Vehicle $vehicle)
     {
+        $this->guardCompany($vehicle->company_id);
         $vehicle->load(['company', 'driver']);
         $documents = $vehicle->documents()->orderByRaw('expiry_date is null')->orderBy('expiry_date')->get();
         $records = $vehicle->records()->orderByDesc('record_date')->orderByDesc('id')->get();
@@ -62,7 +63,8 @@ class VehicleController extends Controller
 
     public function update(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
+        $this->guardCompany($vehicle->company_id);
         $vehicle->update($this->validated($request));
 
         return redirect()->route('vehicles.show', ['vehicle' => $vehicle, 'tab' => $request->input('tab', 'documents')])->with('ok', __('تم حفظ التعديلات.'));
@@ -71,7 +73,8 @@ class VehicleController extends Controller
     /** تغيير الحالة من شريط الحالة (كما في أودو). */
     public function status(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'vehicles.edit');
+        $this->guardCompany($vehicle->company_id);
         $data = $request->validate(['status' => ['required', 'in:'.implode(',', Vehicle::STATUSES)]]);
         $vehicle->update($data);
 
@@ -88,13 +91,17 @@ class VehicleController extends Controller
 
     private function formData(Vehicle $vehicle): array
     {
-        return ['vehicle' => $vehicle, 'companies' => Company::orderBy('name')->get(), 'drivers' => Employee::where('status', 'active')->orderBy('name')->get()];
+        return ['vehicle' => $vehicle, 'companies' => Company::allowed()->orderBy('name')->get(), 'drivers' => Employee::where('status', 'active')->orderBy('name')->get()];
     }
 
     private function validated(Request $request): array
     {
         $data = $request->validate([
-            'company_id' => ['required', 'exists:companies,id'],
+            'company_id' => ['required', 'exists:companies,id', function ($attr, $value, $fail) use ($request) {
+                if (! $request->user()->canAccessCompany((int) $value)) {
+                    $fail(__('لا تملك صلاحية على هذه الشركة.'));
+                }
+            }],
             'plate' => ['required', 'string', 'max:40'],
             'make' => ['nullable', 'string', 'max:60'],
             'model' => ['nullable', 'string', 'max:60'],

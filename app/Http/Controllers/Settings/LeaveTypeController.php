@@ -16,7 +16,7 @@ class LeaveTypeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'leave_types.edit');
         LeaveType::create($this->validated($request));
 
         return back()->with('ok', __('تمت إضافة نوع الإجازة.'));
@@ -24,7 +24,7 @@ class LeaveTypeController extends Controller
 
     public function update(Request $request, LeaveType $leaveType): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'leave_types.edit');
         $leaveType->update($this->validated($request));
 
         return back()->with('ok', __('تم حفظ التعديلات.'));
@@ -32,7 +32,7 @@ class LeaveTypeController extends Controller
 
     public function destroy(Request $request, LeaveType $leaveType): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'leave_types.edit');
         if ($leaveType->requests()->exists()) {
             return back()->with('warn', __('عليه سجلات إجازة؛ عطّله بدل حذفه.'));
         }

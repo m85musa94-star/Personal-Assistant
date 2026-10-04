@@ -11,19 +11,19 @@ class CompanyController extends Controller
 {
     public function index()
     {
-        return view('settings.companies.index', ['companies' => Company::withCount(['employees', 'vehicles'])->orderBy('name')->get()]);
+        return view('settings.companies.index', ['companies' => Company::allowed()->withCount(['employees', 'vehicles'])->orderBy('name')->get()]);
     }
 
     public function create(Request $request)
     {
-        $this->manage($request);
+        $this->permit($request, 'companies.edit');
 
         return view('settings.companies.form', ['company' => new Company(['is_active' => true])]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'companies.edit');
         $company = Company::create($this->validated($request));
 
         return redirect()->route('companies.show', $company)->with('ok', __('تمت إضافة الشركة.'));
@@ -31,6 +31,7 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
+        $this->guardCompany($company->id);
         $company->loadCount(['employees', 'vehicles']);
 
         return view('settings.companies.form', compact('company'));
@@ -38,7 +39,8 @@ class CompanyController extends Controller
 
     public function update(Request $request, Company $company): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'companies.edit');
+        $this->guardCompany($company->id);
         $company->update($this->validated($request));
 
         return redirect()->route('companies.show', $company)->with('ok', __('تم حفظ التعديلات.'));

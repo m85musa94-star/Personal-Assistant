@@ -6,9 +6,15 @@ use Illuminate\Http\Request;
 
 abstract class Controller
 {
-    /** التعديل على بيانات الموظفين والمركبات لمدير النظام أو مسؤول الموظفين والمركبات فقط. */
-    protected function manage(Request $request): void
+    /** يتحقق من صلاحية المستخدم لإجراء تعديل؛ وإلا 403. */
+    protected function permit(Request $request, string $ability): void
     {
-        abort_unless($request->user()->canManageData(), 403, __('هذه الصفحة لمسؤول الموظفين والمركبات فقط'));
+        abort_unless($request->user()->can($ability), 403, __('ليست لديك صلاحية لهذا الإجراء.'));
+    }
+
+    /** يمنع الوصول المباشر (برابط) إلى سجل في شركة غير مسموح بها للمستخدم. */
+    protected function guardCompany(?int $companyId): void
+    {
+        abort_unless(request()->user()->canAccessCompany($companyId), 404);
     }
 }

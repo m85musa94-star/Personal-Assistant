@@ -16,7 +16,7 @@ class Employee extends Model
 
     protected function casts(): array
     {
-        return ['hire_date' => 'date'];
+        return ['hire_date' => 'date', 'company_id' => 'integer'];
     }
 
     public function company(): BelongsTo
@@ -32,6 +32,11 @@ class Employee extends Model
     public function leaves(): HasMany
     {
         return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function records(): HasMany
+    {
+        return $this->hasMany(EmployeeRecord::class);
     }
 
     public function vehicles(): HasMany

@@ -10,7 +10,12 @@ trait InCompany
     public function scopeInCompany($query, ?int $id = null)
     {
         $id ??= CompanyContext::id();
+        $col = $query->getModel()->getTable().'.company_id';
+        if ($id) {
+            return $query->where($col, $id);
+        }
+        $allowed = CompanyContext::allowedIds();
 
-        return $id ? $query->where($query->getModel()->getTable().'.company_id', $id) : $query;
+        return $allowed === null ? $query : $query->whereIn($col, $allowed);
     }
 }

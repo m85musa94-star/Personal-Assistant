@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\EmployeeRecord;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use Illuminate\Http\RedirectResponse;
@@ -37,7 +38,7 @@ class LeaveController extends Controller
 
     public function create(Request $request)
     {
-        $this->manage($request);
+        $this->permit($request, 'leaves.edit');
 
         return view('leaves.form', [
             'types' => LeaveType::where('is_active', true)->orderBy('id')->get(),
@@ -48,7 +49,7 @@ class LeaveController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'leaves.edit');
         $data = $request->validate([
             'employee_id' => ['required', 'exists:employees,id'],
             'leave_type_id' => ['required', 'exists:leave_types,id'],
@@ -59,6 +60,7 @@ class LeaveController extends Controller
         ], ['end_date.after_or_equal' => __('تاريخ النهاية قبل البداية.')]);
 
         $employee = Employee::findOrFail($data['employee_id']);
+        $this->guardCompany($employee->company_id);
         $type = LeaveType::findOrFail($data['leave_type_id']);
         $max = LeaveRequest::calendarDays($data['start_date'], $data['end_date']);
         $days = (float) ($data['days'] ?? $max);
@@ -81,7 +83,8 @@ class LeaveController extends Controller
             }
         }
 
-        $employee->leaves()->create(['leave_type_id' => $type->id, 'start_date' => $data['start_date'], 'end_date' => $data['end_date'], 'days' => $days, 'reason' => $data['reason'] ?? null, 'status' => 'approved']);
+        $leave = $employee->leaves()->create(['leave_type_id' => $type->id, 'start_date' => $data['start_date'], 'end_date' => $data['end_date'], 'days' => $days, 'reason' => $data['reason'] ?? null, 'status' => 'approved']);
+        EmployeeRecord::log($employee, 'leave_added', $this->leaveData($leave->setRelation('type', $type)));
 
         $target = $request->input('return') === 'employee' ? route('employees.show', ['employee' => $employee, 'tab' => 'leaves']) : route('leaves.index');
 
@@ -91,7 +94,8 @@ class LeaveController extends Controller
     /** إلغاء سجل (يبقى محفوظًا بحالة ملغاة) أو استعادته. */
     public function toggle(Request $request, LeaveRequest $leave): RedirectResponse
     {
-        $this->manage($request);
+        $this->permit($request, 'leaves.edit');
+        $this->guardCompany($leave->employee->company_id);
         if ($leave->status === 'cancelled') {
             $overlap = $leave->employee->leaves()->where('status', 'approved')->where('id', '!=', $leave->id)
                 ->whereDate('start_date', '<=', $leave->end_date)->whereDate('end_date', '>=', $leave->start_date)->exists();
@@ -100,7 +104,13 @@ class LeaveController extends Controller
             }
         }
         $leave->update(['status' => $leave->status === 'cancelled' ? 'approved' : 'cancelled']);
+        EmployeeRecord::log($leave->employee, $leave->status === 'cancelled' ? 'leave_cancelled' : 'leave_restored', $this->leaveData($leave->load('type')));
 
         return back()->with('ok', $leave->status === 'cancelled' ? __('تم إلغاء الإجازة.') : __('تمت استعادة الإجازة.'));
+    }
+
+    private function leaveData(LeaveRequest $l): array
+    {
+        return ['type' => $l->type->name, 'type_en' => $l->type->name_en, 'from' => $l->start_date->format('Y-m-d'), 'to' => $l->end_date->format('Y-m-d'), 'days' => rtrim(rtrim(number_format($l->days, 1), '0'), '.')];
     }
 }

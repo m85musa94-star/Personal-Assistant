@@ -1,5 +1,5 @@
 @extends('layouts.odoo')
-@php $isNew = ! $company->exists; $dis = ! auth()->user()->canManageData(); @endphp
+@php $isNew = ! $company->exists; $dis = ! auth()->user()->can('companies.edit'); @endphp
 @section('title', ($isNew ? __('شركة جديدة') : $company->displayName()).' — '.__('مركز القيادة'))
 @section('controlpanel')
 <x-cp :crumbs="[[__('الشركات'), route('companies.index')], [$isNew ? __('جديد') : $company->displayName(), null]]">

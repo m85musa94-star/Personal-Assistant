@@ -4,7 +4,7 @@
 <x-cp :crumbs="[[__('أنواع الإجازات'), null]]"></x-cp>
 @endsection
 @section('content')
-@php $dis = ! auth()->user()->canManageData(); @endphp
+@php $dis = ! auth()->user()->can('leave_types.edit'); @endphp
 <p class="sub">{{ __('الاستحقاق السنوي يُدخله المسؤول حسب نظام الشركة وعقودها. اتركه فارغًا إن لم يُحدَّد؛ عندها لا يُحتسب رصيد ولا تُفترض أرقام.') }}</p>
 @foreach($errors->all() as $e)<div class="warn">{{ $e }}</div>@endforeach
 <div class="card">

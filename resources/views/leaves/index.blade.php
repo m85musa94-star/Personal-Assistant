@@ -1,7 +1,7 @@
 @extends('layouts.odoo')
 @section('title', __('الإجازات').' — '.__('مركز القيادة'))
 @section('controlpanel')
-@php $can = auth()->user()->canManageData(); $cc = \App\Support\CompanyContext::current(); @endphp
+@php $can = auth()->user()->can('leaves.edit'); $cc = \App\Support\CompanyContext::current(); @endphp
 <x-cp :crumbs="[[__('الإجازات'), null]]">
   <x-slot:actions>@if($can)<a class="btn" href="{{ route('leaves.create') }}"><x-icon name="plus"/> {{ __('تسجيل إجازة') }}</a>@endif</x-slot:actions>
   <x-slot:right><span class="date">{{ $leaves->total() }} {{ __('سجل') }}</span></x-slot:right>

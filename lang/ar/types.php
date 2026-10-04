@@ -9,4 +9,6 @@ return [
     'vehicle_status' => ['active' => 'تعمل', 'maintenance' => 'في الصيانة', 'out_of_service' => 'خارج الخدمة', 'sold' => 'مباعة'],
     'employee_status' => ['active' => 'على رأس العمل', 'inactive' => 'غير نشط'],
     'leave_status' => ['approved' => 'مسجّلة', 'cancelled' => 'ملغاة'],
+    'preset' => ['viewer' => 'مشاهد (عرض فقط)', 'manager' => 'مسؤول الموظفين والمركبات', 'hr' => 'مسؤول موظفين وإجازات', 'fleet' => 'مسؤول سيارات', 'tasks' => 'المهام فقط', 'custom' => 'صلاحيات مخصصة'],
+    'employee_record' => ['system' => 'حدث تلقائي', 'note' => 'ملاحظة', 'warning' => 'إنذار', 'commendation' => 'شكر وتقدير', 'evaluation' => 'تقييم', 'training' => 'تدريب', 'incident' => 'واقعة', 'other' => 'أخرى'],
 ];
