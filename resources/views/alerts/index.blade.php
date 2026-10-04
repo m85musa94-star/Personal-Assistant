@@ -17,7 +17,7 @@
 @php $cc = \App\Support\CompanyContext::current(); @endphp
 <div class="o-list tbl-wrap">
   @if($items->isEmpty())<div class="empty"><x-icon name="check-circle"/> {{ __('لا وثائق منتهية أو قريبة من الانتهاء.') }}</div>@else
-  <table><thead><tr><th></th><th>{{ __('الجهة') }}</th>@unless($cc)<th>{{ __('الشركة') }}</th>@endunless<th>{{ __('الوثيقة') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('الجهة / الشركة') }}</th><th>{{ __('الانتهاء') }}</th></tr></thead><tbody>
+  <table><thead><tr><th></th><th>{{ __('الجهة') }}</th>@unless($cc)<th>{{ __('الشركة') }}</th>@endunless<th>{{ __('الوثيقة') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('جهة الإصدار') }}</th><th>{{ __('الانتهاء') }}</th></tr></thead><tbody>
     @foreach($items as $i)
       <tr class="link" onclick="location='{{ $i['url'] }}'">
         <td><x-icon name="{{ $i['kind'] === 'employee' ? 'users' : 'car' }}"/></td><td><a href="{{ $i['url'] }}"><b>{{ $i['owner'] }}</b></a></td>

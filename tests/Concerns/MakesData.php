@@ -32,6 +32,12 @@ trait MakesData
         return Employee::create(array_merge(['company_id' => $c->id, 'name' => $name, 'status' => 'active'], $extra));
     }
 
+    /** بيانات موظف كاملة (الحقول الإلزامية) لطلبات الإضافة والتعديل. */
+    protected function empData(array $x = []): array
+    {
+        return array_merge(['code' => 'E'.uniqid(), 'nationality' => 'سعودي', 'job_title' => 'موظف', 'phone' => '0500000000', 'hire_date' => '2025-01-01'], $x);
+    }
+
     protected function car(Company $c, string $plate = 'ABC 1234', array $extra = []): Vehicle
     {
         return Vehicle::create(array_merge(['company_id' => $c->id, 'plate' => $plate, 'status' => 'active'], $extra));

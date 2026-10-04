@@ -45,7 +45,7 @@
 
     @if($tab === 'documents')
       <div class="tbl-wrap"><table>
-        <tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('الجهة / الشركة') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th><th></th></tr>
+        <tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('جهة الإصدار') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th><th></th></tr>
         @forelse($documents as $d)
           @if($editDoc === $d->id && $can)
             <tr><td colspan="6">@include('partials.doc-form', ['action' => route('vehicle-documents.update', $d), 'method' => 'PUT', 'types' => \App\Models\VehicleDocument::TYPES, 'group' => 'vehicle_doc', 'doc' => $d, 'cancel' => route('vehicles.show', ['vehicle' => $vehicle, 'tab' => 'documents'])])</td></tr>

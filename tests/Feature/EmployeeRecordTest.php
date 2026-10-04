@@ -22,13 +22,13 @@ class EmployeeRecordTest extends TestCase
         $m = $this->user('m@example.com', 'hr');
         $a = $this->company('شركة أ', ['name_en' => 'Company A']);
         $b = $this->company('شركة ب', ['name_en' => 'Company B']);
-        $this->actingAs($m)->post('/employees', ['company_id' => $a->id, 'name' => 'خالد', 'status' => 'active', 'job_title' => 'محاسب'])->assertRedirect();
+        $this->actingAs($m)->post('/employees', $this->empData(['company_id' => $a->id, 'name' => 'خالد', 'status' => 'active', 'job_title' => 'محاسب']))->assertRedirect();
         $e = Employee::first();
         $this->assertSame(['created'], $this->events($e));
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => $b->id, 'name' => 'خالد', 'status' => 'inactive', 'job_title' => 'مدير مالي'])->assertRedirect();
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => $b->id, 'name' => 'خالد', 'status' => 'inactive', 'job_title' => 'مدير مالي']))->assertRedirect();
         $this->assertSame(['created', 'company', 'status', 'job'], $this->events($e));
         // تعديل بلا تغيير جوهري لا يسجّل شيئًا
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => $b->id, 'name' => 'خالد أحمد', 'status' => 'inactive', 'job_title' => 'مدير مالي'])->assertRedirect();
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => $b->id, 'name' => 'خالد أحمد', 'status' => 'inactive', 'job_title' => 'مدير مالي']))->assertRedirect();
         $this->assertCount(4, $e->records);
         $rec = $e->records()->where('event', 'company')->first();
         $this->assertSame($m->id, $rec->user_id);
@@ -42,9 +42,9 @@ class EmployeeRecordTest extends TestCase
         $c = $this->company();
         $e = $this->emp($c, 'x', ['job_title' => 'سائق']);
         // النموذج الحقيقي يرسل company_id كنص
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => (string) $c->id, 'name' => 'x', 'status' => 'active', 'job_title' => 'سائق'])->assertRedirect();
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => (string) $c->id, 'name' => 'x', 'status' => 'active', 'job_title' => 'سائق']))->assertRedirect();
         $this->assertSame([], $this->events($e));
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => (string) $c->id, 'name' => 'x', 'status' => 'active', 'job_title' => 'مشرف'])->assertRedirect();
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => (string) $c->id, 'name' => 'x', 'status' => 'active', 'job_title' => 'مشرف']))->assertRedirect();
         $this->assertSame(['job'], $this->events($e));
     }
 

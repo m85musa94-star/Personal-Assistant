@@ -197,6 +197,6 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => ['code' => 'employee number', 'job_title' => 'job title', 'hire_date' => 'hire date', 'company_id' => 'company'],
 
 ];

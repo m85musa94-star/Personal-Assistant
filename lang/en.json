@@ -142,7 +142,6 @@
  "التنبيهات": "Alerts",
  "الجنسية": "Nationality",
  "الجهة": "Item",
- "الجهة / الشركة": "Issuer / company",
  "الجهة / الورشة": "Vendor / workshop",
  "الحالية (دون المباعة)": "Current (excluding sold)",
  "الرقم": "Number",
@@ -299,5 +298,9 @@
  "مستخدم جديد": "New user",
  "ملف الموظف": "Employee file",
  "ملف الموظف (طباعة)": "Employee file (print)",
- "هذا حسابك: لا يمكنك تغيير صلاحياتك أو إيقافه بنفسك. يمكنك تعديل الاسم والبريد وتغيير كلمتك من «حسابي».": "This is your account: you cannot change your own permissions or suspend it. You can edit your name and email and change your password from “My account”."
+ "هذا حسابك: لا يمكنك تغيير صلاحياتك أو إيقافه بنفسك. يمكنك تعديل الاسم والبريد وتغيير كلمتك من «حسابي».": "This is your account: you cannot change your own permissions or suspend it. You can edit your name and email and change your password from “My account”.",
+ "جهة الإصدار": "Issuing authority",
+ "مثل: الجوازات، شركة التأمين": "e.g. Passports, insurance company",
+ "تحديث": "Update",
+ "تعديل الاسم": "Edit name"
 }

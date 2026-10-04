@@ -23,5 +23,6 @@ return [
         'start_date' => 'تاريخ البداية', 'end_date' => 'تاريخ النهاية', 'leave_type_id' => 'نوع الإجازة', 'employee_id' => 'الموظف',
         'check_in' => 'الحضور', 'check_out' => 'الانصراف', 'days' => 'عدد الأيام', 'annual_days' => 'الاستحقاق السنوي',
         'hire_date' => 'تاريخ التعيين', 'salary' => 'الراتب', 'decision_note' => 'سبب الرفض', 'role' => 'الدور',
+        'code' => 'رقم الموظف', 'nationality' => 'الجنسية', 'job_title' => 'المسمى الوظيفي', 'phone' => 'الجوال', 'company_id' => 'الشركة',
     ],
 ];

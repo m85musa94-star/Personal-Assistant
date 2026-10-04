@@ -49,7 +49,7 @@ class PermissionsTest extends TestCase
         $v = $this->car($c);
 
         // موظفون: يعدّل
-        $this->actingAs($hr)->put("/employees/{$e->id}", ['company_id' => $c->id, 'name' => 'جديد', 'status' => 'active'])->assertRedirect();
+        $this->actingAs($hr)->put("/employees/{$e->id}", $this->empData(['company_id' => $c->id, 'name' => 'جديد', 'status' => 'active']))->assertRedirect();
         $this->assertSame('جديد', $e->fresh()->name);
         // مركبات: لا يرى ولا يعدّل
         $this->actingAs($hr)->get('/vehicles')->assertForbidden();
@@ -60,7 +60,7 @@ class PermissionsTest extends TestCase
         $this->actingAs($fleet)->put("/vehicles/{$v->id}", ['company_id' => $c->id, 'plate' => 'NEW 1', 'status' => 'active'])->assertRedirect();
         $this->assertSame('NEW 1', $v->fresh()->plate);
         $this->actingAs($fleet)->get('/employees')->assertForbidden();
-        $this->actingAs($fleet)->post('/employees', ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
+        $this->actingAs($fleet)->post('/employees', $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
         $this->actingAs($fleet)->get('/leaves')->assertForbidden();
     }
 
@@ -76,8 +76,8 @@ class PermissionsTest extends TestCase
             $this->actingAs($v)->get($p)->assertOk();
         }
         $this->actingAs($v)->get('/employees/create')->assertForbidden();
-        $this->actingAs($v)->post('/employees', ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
-        $this->actingAs($v)->put("/employees/{$e->id}", ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
+        $this->actingAs($v)->post('/employees', $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
+        $this->actingAs($v)->put("/employees/{$e->id}", $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
         $this->actingAs($v)->post("/employees/{$e->id}/documents", ['type' => 'iqama'])->assertForbidden();
         $this->actingAs($v)->put("/employee-documents/{$doc->id}", ['type' => 'iqama'])->assertForbidden();
         $this->actingAs($v)->delete("/employee-documents/{$doc->id}")->assertForbidden();
@@ -99,7 +99,7 @@ class PermissionsTest extends TestCase
         $e = $this->emp($this->company());
         $this->actingAs($u)->post("/employees/{$e->id}/records", ['type' => 'warning', 'title' => 'تأخر', 'event_date' => '2026-02-01'])->assertRedirect();
         $this->assertSame(1, $e->records()->where('type', 'warning')->count());
-        $this->actingAs($u)->put("/employees/{$e->id}", ['company_id' => $e->company_id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
+        $this->actingAs($u)->put("/employees/{$e->id}", $this->empData(['company_id' => $e->company_id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
     }
 
     public function test_settings_edit_permissions(): void
@@ -178,7 +178,7 @@ class PermissionsTest extends TestCase
 
         $this->actingAs($u)->get("/employees/{$eb->id}")->assertNotFound();
         $this->actingAs($u)->get("/employees/{$eb->id}/print")->assertNotFound();
-        $this->actingAs($u)->put("/employees/{$eb->id}", ['company_id' => $a->id, 'name' => 'اختطاف', 'status' => 'active'])->assertNotFound();
+        $this->actingAs($u)->put("/employees/{$eb->id}", $this->empData(['company_id' => $a->id, 'name' => 'اختطاف', 'status' => 'active']))->assertNotFound();
         $this->actingAs($u)->post("/employees/{$eb->id}/documents", ['type' => 'iqama'])->assertNotFound();
         $this->actingAs($u)->put("/employee-documents/{$doc->id}", ['type' => 'iqama'])->assertNotFound();
         $this->actingAs($u)->delete("/employee-documents/{$doc->id}")->assertNotFound();
@@ -205,9 +205,9 @@ class PermissionsTest extends TestCase
         $a = $this->company('A');
         $b = $this->company('B');
         $u = $this->restricted(['employees.edit', 'vehicles.edit', 'tasks.use'], [$a->id]);
-        $this->actingAs($u)->post('/employees', ['company_id' => $b->id, 'name' => 'x', 'status' => 'active'])->assertSessionHasErrors('company_id');
+        $this->actingAs($u)->post('/employees', $this->empData(['company_id' => $b->id, 'name' => 'x', 'status' => 'active']))->assertSessionHasErrors('company_id');
         $this->actingAs($u)->post('/vehicles', ['company_id' => $b->id, 'plate' => 'Z', 'status' => 'active'])->assertSessionHasErrors('company_id');
-        $this->actingAs($u)->post('/employees', ['company_id' => $a->id, 'name' => 'مسموح', 'status' => 'active'])->assertSessionHasNoErrors();
+        $this->actingAs($u)->post('/employees', $this->empData(['company_id' => $a->id, 'name' => 'مسموح', 'status' => 'active']))->assertSessionHasNoErrors();
         $this->actingAs($u)->post('/company/switch', ['company' => $b->id])->assertForbidden();
         $this->actingAs($u)->post('/company/switch', ['company' => $a->id])->assertRedirect();
         $this->assertSame(1, Employee::count());

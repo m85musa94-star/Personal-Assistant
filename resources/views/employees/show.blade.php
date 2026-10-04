@@ -9,7 +9,9 @@
 @section('controlpanel')
 <x-cp :crumbs="[[__('الموظفون'), route('employees.index')], [$employee->displayName(), null]]">
   <x-slot:actions>
-    @if($can)<button form="ef" class="btn">{{ __('حفظ') }}</button>@endif
+    @if($can)<button form="ef" class="btn"><x-icon name="check"/> {{ __('تحديث') }}</button>
+    <button type="button" class="btn sec" onclick="var n=document.querySelector('[name=name]');n.focus();n.select()"><x-icon name="edit"/> {{ __('تعديل الاسم') }}</button>@endif
+    @if(auth()->user()->is_admin)<button form="edel" class="btn sec"><x-icon name="trash"/> {{ __('حذف') }}</button>@endif
     @can('leaves.edit')<a class="btn sec" href="{{ route('leaves.create', ['employee' => $employee->id]) }}"><x-icon name="calendar-off"/> {{ __('تسجيل إجازة') }}</a>@endcan
     <a class="btn sec" href="{{ route('employees.print', $employee) }}" target="_blank"><x-icon name="file"/> {{ __('ملف الموظف (طباعة)') }}</a>
   </x-slot:actions>
@@ -51,7 +53,7 @@
 
     @if($tab === 'documents')
       <div class="tbl-wrap"><table>
-        <tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('الجهة / الشركة') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th><th></th></tr>
+        <tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('جهة الإصدار') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th><th></th></tr>
         @forelse($documents as $d)
           @if($editDoc === $d->id && $can)
             <tr><td colspan="6">@include('partials.doc-form', ['action' => route('employee-documents.update', $d), 'method' => 'PUT', 'types' => \App\Models\EmployeeDocument::TYPES, 'group' => 'employee_doc', 'doc' => $d, 'cancel' => route('employees.show', ['employee' => $employee, 'tab' => 'documents'])])</td></tr>
@@ -131,8 +133,8 @@
   </div>
 
   @if(auth()->user()->is_admin)
-    <form method="POST" action="{{ route('employees.destroy', $employee) }}" onsubmit="return confirm('{{ __('حذف الموظف نهائيًا مع كل وثائقه وإجازاته؟ الأفضل تعطيله بدل الحذف.') }}')" style="margin-top:24px">@csrf @method('DELETE')
-      <button class="btn sec sm"><x-icon name="trash"/> {{ __('حذف نهائي') }}</button></form>
+    <form method="POST" action="{{ route('employees.destroy', $employee) }}" id="edel" onsubmit="return confirm('{{ __('حذف الموظف نهائيًا مع كل وثائقه وإجازاته؟ الأفضل تعطيله بدل الحذف.') }}')">@csrf @method('DELETE')
+      </form>
   @endif
 </div>
 @include('partials.leave-days-js')

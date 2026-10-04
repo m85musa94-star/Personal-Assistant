@@ -17,11 +17,11 @@ class EmployeeTest extends TestCase
         $m = $this->user('m@example.com', 'hr');
         $c = $this->company();
         $this->actingAs($m)->get('/employees/create')->assertOk();
-        $this->actingAs($m)->post('/employees', ['company_id' => $c->id, 'name' => 'سارة', 'name_en' => 'Sara', 'code' => 'E1', 'nationality' => 'سعودية', 'status' => 'active', 'hire_date' => '2025-03-01'])->assertRedirect();
+        $this->actingAs($m)->post('/employees', $this->empData(['company_id' => $c->id, 'name' => 'سارة', 'name_en' => 'Sara', 'code' => 'E1', 'nationality' => 'سعودية', 'status' => 'active', 'hire_date' => '2025-03-01']))->assertRedirect();
         $e = Employee::first();
         $this->assertSame('E1', $e->code);
-        $this->actingAs($m)->post('/employees', ['company_id' => $c->id, 'name' => 'آخر', 'code' => 'E1', 'status' => 'active'])->assertSessionHasErrors('code');
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => $c->id, 'name' => 'سارة أحمد', 'name_en' => '', 'code' => 'E1', 'status' => 'inactive'])->assertRedirect();
+        $this->actingAs($m)->post('/employees', $this->empData(['company_id' => $c->id, 'name' => 'آخر', 'code' => 'E1', 'status' => 'active']))->assertSessionHasErrors('code');
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => $c->id, 'name' => 'سارة أحمد', 'name_en' => '', 'code' => 'E1', 'status' => 'inactive']))->assertRedirect();
         $this->assertSame('inactive', $e->fresh()->status);
         $this->assertNull($e->fresh()->name_en);
         $this->assertSame('سارة أحمد', $e->fresh()->name);
@@ -32,7 +32,7 @@ class EmployeeTest extends TestCase
         $m = $this->user('m@example.com', 'hr');
         $c = $this->company();
         $e = $this->emp($c, 'x', ['notes' => 'ملاحظة مهمة']);
-        $this->actingAs($m)->put("/employees/{$e->id}", ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertRedirect();
+        $this->actingAs($m)->put("/employees/{$e->id}", $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertRedirect();
         $this->assertSame('ملاحظة مهمة', $e->fresh()->notes);
     }
 
@@ -42,7 +42,7 @@ class EmployeeTest extends TestCase
         $c = $this->company();
         $e = $this->emp($c, 'خالد');
         $this->actingAs($v)->get("/employees/{$e->id}")->assertOk()->assertSee('خالد')->assertDontSee('إضافة وثيقة');
-        $this->actingAs($v)->put("/employees/{$e->id}", ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
+        $this->actingAs($v)->put("/employees/{$e->id}", $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
         $this->actingAs($v)->post("/employees/{$e->id}/documents", ['type' => 'iqama'])->assertForbidden();
         $this->actingAs($v)->delete("/employees/{$e->id}")->assertForbidden();
     }
@@ -120,5 +120,14 @@ class EmployeeTest extends TestCase
         $e->leaves()->create(['leave_type_id' => $this->annual()->id, 'start_date' => today()->subDay(), 'end_date' => today()->addDay(), 'days' => 3, 'status' => 'approved']);
         $this->assertTrue($e->onLeaveToday());
         $this->actingAs($v)->get('/employees')->assertSee('في إجازة');
+    }
+
+    public function test_required_fields_are_enforced(): void
+    {
+        $m = $this->user('req@example.com', 'hr');
+        $c = $this->company();
+        $this->actingAs($m)->post('/employees', ['company_id' => $c->id, 'name' => 'ناقص', 'status' => 'active'])
+            ->assertSessionHasErrors(['code', 'nationality', 'job_title', 'phone', 'hire_date']);
+        $this->assertSame(0, Employee::count());
     }
 }

@@ -13,7 +13,7 @@
   @if($employee->vehicles->isNotEmpty())<div><b>{{ __('المركبات') }}:</b>{{ $employee->vehicles->pluck('plate')->implode('، ') }}</div>@endif
 </div>
 <h2>{{ __('الوثائق') }}</h2>
-<table class="ptable"><tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('الجهة / الشركة') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th></tr>
+<table class="ptable"><tr><th>{{ __('النوع') }}</th><th>{{ __('الرقم') }}</th><th>{{ __('جهة الإصدار') }}</th><th>{{ __('الإصدار') }}</th><th>{{ __('الانتهاء') }}</th></tr>
 @forelse($documents as $d)<tr><td>{{ $d->label() }}</td><td dir="ltr" style="text-align:start">{{ $d->number ?: '—' }}</td><td>{{ $d->provider ?: '—' }}</td><td>{{ $d->issue_date?->fmt() ?: '—' }}</td><td>{{ $d->expiry_date?->fmt() ?: '—' }}@if($d->tone() === 'red') ({{ __('منتهية') }})@endif</td></tr>
 @empty<tr><td colspan="5">{{ __('لا وثائق مسجّلة بعد.') }}</td></tr>@endforelse</table>
 @if($canLeaves)

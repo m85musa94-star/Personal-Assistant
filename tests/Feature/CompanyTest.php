@@ -29,7 +29,7 @@ class CompanyTest extends TestCase
         $this->actingAs($viewer)->post('/settings/companies', ['name' => 'x'])->assertForbidden();
         $this->actingAs($viewer)->put("/settings/companies/{$c->id}", ['name' => 'y'])->assertForbidden();
         $this->actingAs($viewer)->delete("/settings/companies/{$c->id}")->assertForbidden();
-        $this->actingAs($viewer)->post('/employees', ['company_id' => $c->id, 'name' => 'x', 'status' => 'active'])->assertForbidden();
+        $this->actingAs($viewer)->post('/employees', $this->empData(['company_id' => $c->id, 'name' => 'x', 'status' => 'active']))->assertForbidden();
         $this->actingAs($viewer)->post('/vehicles', ['company_id' => $c->id, 'plate' => 'X', 'status' => 'active'])->assertForbidden();
         $this->assertSame(1, Company::count());
     }
