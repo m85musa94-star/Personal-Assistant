@@ -42,7 +42,7 @@
         <div class="ttl"><b>{{ $e->displayName() }}</b><small>{{ $e->job_title ?: '—' }}</small>
           <div class="meta">
             @unless($cc)<span class="pill pri">{{ $e->company?->displayName() }}</span>@endunless
-            @if($e->nationality)<span class="tag">{{ $e->nationality }}</span>@endif
+            @if($e->nationality)<span class="tag">{{ \App\Support\Nationalities::label($e->nationality) }}</span>@endif
             @if(isset($onLeave[$e->id]))<span class="pill vio">{{ __('في إجازة') }}</span>@endif
             @unless($e->isActive())<span class="pill">{{ __('غير نشط') }}</span>@endunless
             @foreach($warn as $d)<span class="pill {{ $d->tone() }}">{{ $d->label() }}: {{ $d->daysLeft() < 0 ? __('منتهية') : __('بعد :n يوم', ['n' => $d->daysLeft()]) }}</span>@endforeach
@@ -60,7 +60,7 @@
         <td><x-avatar :employee="$e" size="sm"/></td>
         <td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->displayName() }}</b></a></td>
         @unless($cc)<td>{{ $e->company?->displayName() }}</td>@endunless
-        <td>{{ $e->code ?: '—' }}</td><td>{{ $e->job_title ?: '—' }}</td><td>{{ $e->nationality ?: '—' }}</td><td dir="ltr" style="text-align:start">{{ $e->phone ?: '—' }}</td>
+        <td>{{ $e->code ?: '—' }}</td><td>{{ $e->job_title ?: '—' }}</td><td>{{ \App\Support\Nationalities::label($e->nationality) ?: '—' }}</td><td dir="ltr" style="text-align:start">{{ $e->phone ?: '—' }}</td>
         <td>{{ $e->hire_date?->fmt() ?: '—' }}</td>
         <td>@if($worst)<span class="pill {{ $worst->tone() }}">{{ $worst->label() }} · {{ $worst->daysLeft() < 0 ? __('منتهية') : __('بعد :n يوم', ['n' => $worst->daysLeft()]) }}</span>@else<span class="pill grn">{{ __('سليمة') }}</span>@endif</td>
         <td>@if(isset($onLeave[$e->id]))<span class="pill vio">{{ __('في إجازة') }}</span>@else<span class="pill {{ $e->isActive() ? 'grn' : '' }}">{{ __('types.employee_status.'.$e->status) }}</span>@endif</td>

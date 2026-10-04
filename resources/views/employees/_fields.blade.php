@@ -5,7 +5,7 @@
   <div class="o-f"><label>{{ __('الشركة') }}</label><select name="company_id" required @disabled($dis)>@foreach($companies as $c)<option value="{{ $c->id }}" @selected((string) old('company_id', $employee->company_id) === (string) $c->id)>{{ $c->displayName() }}</option>@endforeach</select></div>
   <div class="o-f"><label>{{ __('المسمى الوظيفي') }}</label><input name="job_title" required value="{{ old('job_title', $employee->job_title) }}" @disabled($dis)></div>
   <div class="o-f"><label>{{ __('رقم الموظف') }}</label><input name="code" required value="{{ old('code', $employee->code) }}" dir="ltr" @disabled($dis)></div>
-  <div class="o-f"><label>{{ __('الجنسية') }}</label><input name="nationality" required value="{{ old('nationality', $employee->nationality) }}" @disabled($dis)></div>
+  <div class="o-f"><label>{{ __('الجنسية') }}</label><select name="nationality" required @disabled($dis)><option value="">{{ __('— اختر —') }}</option>@foreach(\App\Support\Nationalities::options(old('nationality', $employee->nationality)) as $v => $l)<option value="{{ $v }}" @selected(old('nationality', $employee->nationality) === $v)>{{ $l }}</option>@endforeach</select></div>
   <div class="o-f"><label>{{ __('تاريخ التعيين') }}</label><input type="date" name="hire_date" required value="{{ $dt('hire_date') }}" @disabled($dis)></div>
   <div class="o-f"><label>{{ __('الجوال') }}</label><input name="phone" required value="{{ old('phone', $employee->phone) }}" dir="ltr" @disabled($dis)></div>
   <div class="o-f"><label>{{ __('البريد الإلكتروني') }}</label><input type="email" name="email" value="{{ old('email', $employee->email) }}" dir="ltr" @disabled($dis)></div>

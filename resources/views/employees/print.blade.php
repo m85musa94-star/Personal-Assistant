@@ -7,7 +7,7 @@
 <h2>{{ __('البيانات الأساسية') }}</h2>
 <div class="kvg">
   <div><b>{{ __('الاسم') }}:</b>{{ $employee->name }}</div><div><b>{{ __('الاسم (إنجليزي)') }}:</b>{{ $employee->name_en ?: '—' }}</div>
-  <div><b>{{ __('المسمى الوظيفي') }}:</b>{{ $employee->job_title ?: '—' }}</div><div><b>{{ __('الجنسية') }}:</b>{{ $employee->nationality ?: '—' }}</div>
+  <div><b>{{ __('المسمى الوظيفي') }}:</b>{{ $employee->job_title ?: '—' }}</div><div><b>{{ __('الجنسية') }}:</b>{{ \App\Support\Nationalities::label($employee->nationality) ?: '—' }}</div>
   <div><b>{{ __('تاريخ التعيين') }}:</b>{{ $employee->hire_date?->fmt() ?: '—' }}</div><div><b>{{ __('الجوال') }}:</b><span dir="ltr">{{ $employee->phone ?: '—' }}</span></div>
   <div><b>{{ __('البريد الإلكتروني') }}:</b><span dir="ltr">{{ $employee->email ?: '—' }}</span></div>
   @if($employee->vehicles->isNotEmpty())<div><b>{{ __('المركبات') }}:</b>{{ $employee->vehicles->pluck('plate')->implode('، ') }}</div>@endif

@@ -19,7 +19,7 @@
   @forelse($rows as $i => $r)
     @php $e = $r['employee']; $d = $r['docs']; @endphp
     <tr class="link" onclick="location='{{ route('employees.show', $e) }}'">
-      <td>{{ $i + 1 }}</td><td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->displayName() }}</b></a></td><td>{{ $e->company?->displayName() }}</td><td>{{ $e->code ?: '—' }}</td><td>{{ $e->job_title ?: '—' }}</td><td>{{ $e->nationality ?: '—' }}</td><td>{{ $e->hire_date?->fmt() ?: '—' }}</td><td dir="ltr" style="text-align:start">{{ $e->phone ?: '—' }}</td>
+      <td>{{ $i + 1 }}</td><td><a href="{{ route('employees.show', $e) }}"><b>{{ $e->displayName() }}</b></a></td><td>{{ $e->company?->displayName() }}</td><td>{{ $e->code ?: '—' }}</td><td>{{ $e->job_title ?: '—' }}</td><td>{{ \App\Support\Nationalities::label($e->nationality) ?: '—' }}</td><td>{{ $e->hire_date?->fmt() ?: '—' }}</td><td dir="ltr" style="text-align:start">{{ $e->phone ?: '—' }}</td>
       <td>@if($d['iqama'])<span dir="ltr">{{ $d['iqama']->number }}</span><br><x-expiry :doc="$d['iqama']"/>@else — @endif</td>
       <td>@if($d['insurance']){{ $d['insurance']->provider }}<br><x-expiry :doc="$d['insurance']"/>@else — @endif</td>
       <td>@if($d['passport'])<x-expiry :doc="$d['passport']"/>@else — @endif</td>

@@ -8,6 +8,7 @@ use App\Models\EmployeeRecord;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Support\CompanyContext;
+use App\Support\Nationalities;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -171,7 +172,7 @@ class EmployeeController extends Controller
             foreach (['iqama', 'insurance', 'passport', 'contract', 'work_permit', 'driving_license'] as $t) {
                 $docs[$t] = $e->documents->where('type', $t)->sortByDesc('expiry_date')->first();
             }
-            $csv = [$e->code, $e->name, $e->name_en, $e->company?->displayName(), $e->job_title, $e->nationality, $e->hire_date?->format('Y-m-d'), $e->phone, $e->email, __('types.employee_status.'.$e->status)];
+            $csv = [$e->code, $e->name, $e->name_en, $e->company?->displayName(), $e->job_title, Nationalities::label($e->nationality), $e->hire_date?->format('Y-m-d'), $e->phone, $e->email, __('types.employee_status.'.$e->status)];
             foreach ($docs as $d) {
                 $csv[] = $d?->number;
                 $csv[] = $d?->expiry_date?->format('Y-m-d');

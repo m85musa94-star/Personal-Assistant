@@ -12,6 +12,10 @@ if(t==='auto'){t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light
 window.markazToggleTheme=function(){var n=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=n;
 fetch('/preferences',{method:'POST',credentials:'same-origin',headers:{'Accept':'application/json','Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},body:JSON.stringify({theme:n})}).catch(function(){})}})();
 </script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){function f(r){r.querySelectorAll&&r.querySelectorAll('input[type=date]').forEach(function(i){i.lang='en-GB'})}
+f(document);new MutationObserver(function(m){m.forEach(function(x){x.addedNodes.forEach(function(n){if(n.nodeType===1){if(n.matches('input[type=date]'))n.lang='en-GB';f(n)}})})}).observe(document.body,{childList:true,subtree:true})});
+</script>
 <link rel="stylesheet" href="{{ asset('app/style.css') }}?v={{ filemtime(public_path('app/style.css')) }}">
 @stack('head')
 </head>
